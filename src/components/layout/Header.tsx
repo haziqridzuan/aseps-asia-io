@@ -4,11 +4,14 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export function Header() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [pageTitle, setPageTitle] = useState("");
+  const { theme, toggleTheme } = useTheme();
   
   useEffect(() => {
     const path = location.pathname;
@@ -33,29 +36,26 @@ export function Header() {
 
   return (
     <header className={cn(
-      "h-[60px] border-b border-border bg-white flex items-center justify-between px-4",
+      "h-[60px] border-b border-border bg-card flex items-center justify-between px-4",
       "sticky top-0 z-10"
     )}>
       <div className="animate-fade-in">
         <h1 className="text-xl font-semibold">{pageTitle}</h1>
       </div>
       
-      <div className="flex items-center gap-2">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="hidden md:flex"
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
         >
-          Help
+          {theme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
         </Button>
-        
-        <div className="relative">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-              <span className="text-xs font-medium">UA</span>
-            </div>
-          </div>
-        </div>
       </div>
     </header>
   );

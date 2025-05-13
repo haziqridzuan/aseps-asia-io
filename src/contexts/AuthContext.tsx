@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
-    navigate("/admin/login");
+    navigate("/"); // Redirect to main dashboard instead of login
     
     toast({
       title: "Logged out",
