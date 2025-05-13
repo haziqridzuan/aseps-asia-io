@@ -31,7 +31,7 @@ export default function AdminSuppliers() {
     supplier.name.toLowerCase().includes(search.toLowerCase()) ||
     supplier.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
     supplier.email.toLowerCase().includes(search.toLowerCase()) ||
-    supplier.location.toLowerCase().includes(search.toLowerCase())
+    supplier.country.toLowerCase().includes(search.toLowerCase())
   );
   
   const handleDeleteSupplier = (supplierId: string) => {
@@ -104,7 +104,7 @@ export default function AdminSuppliers() {
                 <TableHead>Supplier Name</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Country</TableHead>
                 <TableHead>Purchase Orders</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -116,7 +116,7 @@ export default function AdminSuppliers() {
                     <TableCell className="font-medium">{supplier.name}</TableCell>
                     <TableCell>{supplier.contactPerson}</TableCell>
                     <TableCell>{supplier.email}</TableCell>
-                    <TableCell>{supplier.location}</TableCell>
+                    <TableCell>{supplier.country}</TableCell>
                     <TableCell>{getSupplierPOCount(supplier.id)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

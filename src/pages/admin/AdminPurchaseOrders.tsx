@@ -143,7 +143,7 @@ export default function AdminPurchaseOrders() {
                     <TableCell className="font-medium">{po.poNumber}</TableCell>
                     <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                     <TableCell>{getProjectName(po.projectId)}</TableCell>
-                    <TableCell>{format(new Date(po.issueDate), "MMM d, yyyy")}</TableCell>
+                    <TableCell>{format(new Date(po.issuedDate), "MMM d, yyyy")}</TableCell>
                     <TableCell>
                       <span 
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

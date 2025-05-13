@@ -38,7 +38,7 @@ export default function AdminExternalLinks() {
     const matchesSearch = 
       search === "" ||
       link.title.toLowerCase().includes(search.toLowerCase()) ||
-      link.description.toLowerCase().includes(search.toLowerCase());
+      link.url.toLowerCase().includes(search.toLowerCase());
     
     const matchesType = typeFilter ? link.type === typeFilter : true;
     

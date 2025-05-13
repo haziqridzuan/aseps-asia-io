@@ -35,6 +35,7 @@ export interface Supplier {
   rating: number;
   onTimeDelivery: number;
   comments: { positive: string[]; negative: string[] };
+  location?: string; // Adding location property
 }
 
 export interface PurchaseOrder {
@@ -91,6 +92,7 @@ interface DataContextType {
   deleteExternalLink: (id: string) => void;
   generateDummyData: () => void;
   syncWithSupabase: () => Promise<void>;
+  clearAllData: () => Promise<void>; // Adding clearAllData function
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -401,6 +403,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   };
+  
+  // Clear all data
+  const clearAllData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Clear all data arrays
+      setProjects([]);
+      setClients([]);
+      setSuppliers([]);
+      setPurchaseOrders([]);
+      setExternalLinks([]);
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Data cleared",
+        description: "All data has been cleared successfully",
+      });
+    } catch (err) {
+      setError("Failed to clear data");
+      toast({
+        title: "Clear failed",
+        description: "Could not clear the data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <DataContext.Provider value={{
@@ -411,7 +445,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addSupplier, updateSupplier, deleteSupplier,
       addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder,
       addExternalLink, updateExternalLink, deleteExternalLink,
-      generateDummyData, syncWithSupabase
+      generateDummyData, syncWithSupabase, clearAllData
     }}>
       {children}
     </DataContext.Provider>
