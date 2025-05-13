@@ -12,13 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,12 +20,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash, ExternalLink } from "lucide-react";
+import { Plus, Search, Pencil, Trash, ExternalLink as ExternalLinkIcon } from "lucide-react";
+import { ExternalLink } from "@/contexts/DataContext";
+import ExternalLinkForm from "@/components/admin/ExternalLinkForm";
 
 export default function AdminExternalLinks() {
   const { externalLinks, projects, suppliers, deleteExternalLink } = useData();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedLink, setSelectedLink] = useState<ExternalLink | undefined>(undefined);
   
   const filteredLinks = externalLinks.filter(link => {
     const matchesSearch = 
@@ -50,6 +47,21 @@ export default function AdminExternalLinks() {
       deleteExternalLink(linkId);
       toast.success("External link deleted successfully");
     }
+  };
+  
+  const handleEditLink = (link: ExternalLink) => {
+    setSelectedLink(link);
+    setIsFormOpen(true);
+  };
+  
+  const handleAddLink = () => {
+    setSelectedLink(undefined);
+    setIsFormOpen(true);
+  };
+  
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setSelectedLink(undefined);
   };
   
   // Helper functions to get names
@@ -94,28 +106,13 @@ export default function AdminExternalLinks() {
               <SelectItem value="Report">Reports</SelectItem>
               <SelectItem value="Photo">Photos</SelectItem>
               <SelectItem value="Tracking">Tracking</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
             </SelectContent>
           </Select>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Link
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Add External Link</DialogTitle>
-              </DialogHeader>
-              <div className="py-4 text-center text-muted-foreground">
-                <ExternalLink className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <p className="mt-2">External Link form would go here</p>
-                <p className="text-sm">This is a placeholder for the link form</p>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleAddLink}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Link
+          </Button>
         </div>
       </div>
       
@@ -162,7 +159,7 @@ export default function AdminExternalLinks() {
                         className="text-primary hover:underline flex items-center"
                       >
                         <span className="truncate">{link.url}</span>
-                        <ExternalLink className="ml-1 h-3 w-3" />
+                        <ExternalLinkIcon className="ml-1 h-3 w-3" />
                       </a>
                     </TableCell>
                     <TableCell className="text-right">
@@ -170,6 +167,7 @@ export default function AdminExternalLinks() {
                         <Button 
                           variant="outline" 
                           size="icon"
+                          onClick={() => handleEditLink(link)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -196,6 +194,12 @@ export default function AdminExternalLinks() {
           </Table>
         </CardContent>
       </Card>
+      
+      <ExternalLinkForm 
+        open={isFormOpen}
+        onClose={closeForm}
+        link={selectedLink}
+      />
     </div>
   );
 }

@@ -12,13 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,13 +20,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash } from "lucide-react";
 import { format } from "date-fns";
+import PurchaseOrderForm from "@/components/admin/PurchaseOrderForm";
+import { PurchaseOrder } from "@/contexts/DataContext";
 
 export default function AdminPurchaseOrders() {
   const { purchaseOrders, suppliers, projects, deletePurchaseOrder } = useData();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | undefined>(undefined);
   
   const filteredPOs = purchaseOrders.filter(po => {
     const matchesSearch = 
@@ -52,6 +49,21 @@ export default function AdminPurchaseOrders() {
       deletePurchaseOrder(poId);
       toast.success("Purchase order deleted successfully");
     }
+  };
+  
+  const handleEditPO = (po: PurchaseOrder) => {
+    setSelectedPO(po);
+    setIsFormOpen(true);
+  };
+  
+  const handleAddPO = () => {
+    setSelectedPO(undefined);
+    setIsFormOpen(true);
+  };
+  
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setSelectedPO(undefined);
   };
   
   // Helper functions to get names
@@ -94,28 +106,13 @@ export default function AdminPurchaseOrders() {
               <SelectItem value="Active">Active</SelectItem>
               <SelectItem value="Completed">Completed</SelectItem>
               <SelectItem value="Delayed">Delayed</SelectItem>
-              <SelectItem value="Cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New PO
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px]">
-              <DialogHeader>
-                <DialogTitle>Create Purchase Order</DialogTitle>
-              </DialogHeader>
-              <div className="py-4 text-center text-muted-foreground">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <p className="mt-2">Purchase Order form would go here</p>
-                <p className="text-sm">This is a placeholder for the PO form</p>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleAddPO}>
+            <Plus className="mr-2 h-4 w-4" />
+            New PO
+          </Button>
         </div>
       </div>
       
@@ -162,6 +159,7 @@ export default function AdminPurchaseOrders() {
                         <Button 
                           variant="outline" 
                           size="icon"
+                          onClick={() => handleEditPO(po)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -188,6 +186,12 @@ export default function AdminPurchaseOrders() {
           </Table>
         </CardContent>
       </Card>
+      
+      <PurchaseOrderForm 
+        open={isFormOpen}
+        onClose={closeForm}
+        purchaseOrder={selectedPO}
+      />
     </div>
   );
 }

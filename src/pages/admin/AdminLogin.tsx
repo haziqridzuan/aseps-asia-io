@@ -73,9 +73,6 @@ export default function AdminLogin() {
                   required
                   autoFocus
                 />
-                <p className="text-xs text-muted-foreground">
-                  (Hint: The password is 1234)
-                </p>
               </div>
             </CardContent>
             <CardFooter>
