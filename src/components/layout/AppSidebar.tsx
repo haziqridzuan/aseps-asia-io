@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   ChartBar,
@@ -82,7 +83,6 @@ export function AppSidebar() {
         "transition-all duration-300 ease-in-out",
         isCollapsed ? "w-[70px]" : "w-[240px]"
       )}
-      collapsed={isCollapsed}
     >
       <SidebarHeader className="h-[60px] flex items-center justify-center">
         {!isCollapsed ? (
