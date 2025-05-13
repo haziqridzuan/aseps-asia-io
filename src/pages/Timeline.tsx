@@ -36,7 +36,7 @@ export default function Timeline() {
   
   // Change PO selection
   const handlePOChange = (value: string) => {
-    setSelectedPOId(value);
+    setSelectedPOId(value === "all" ? null : value);
   };
   
   // Generate timeline data based on selection
@@ -224,7 +224,7 @@ export default function Timeline() {
             <div>
               <label className="text-sm font-medium mb-2 block">Select Purchase Order</label>
               <Select 
-                value={selectedPOId || ""} 
+                value={selectedPOId || "all"} 
                 onValueChange={handlePOChange}
                 disabled={!selectedProjectId}
               >
@@ -234,7 +234,7 @@ export default function Timeline() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Purchase Orders</SelectLabel>
-                    <SelectItem value="">All POs</SelectItem>
+                    <SelectItem value="all">All POs</SelectItem>
                     {projectPOs.map(po => (
                       <SelectItem key={po.id} value={po.id}>
                         {po.poNumber}
