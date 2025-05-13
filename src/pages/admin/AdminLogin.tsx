@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Settings } from "lucide-react";
+import { Settings, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function AdminLogin() {
   const [password, setPassword] = useState("");
@@ -75,9 +76,16 @@ export default function AdminLogin() {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col space-y-3">
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign in"}
+              </Button>
+              
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/" className="flex items-center justify-center">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Link>
               </Button>
             </CardFooter>
           </form>

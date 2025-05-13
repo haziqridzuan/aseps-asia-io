@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,6 +46,7 @@ export interface PurchaseOrder {
   status: "Active" | "Completed" | "Delayed";
   deadline: string;
   issuedDate: string;
+  progress?: number; // Add progress field
 }
 
 export interface Part {
@@ -222,6 +222,7 @@ const samplePurchaseOrders: PurchaseOrder[] = [
     status: "Active",
     deadline: "2025-06-15",
     issuedDate: "2025-01-20",
+    progress: 65,
   },
   {
     id: "po2",
@@ -235,6 +236,7 @@ const samplePurchaseOrders: PurchaseOrder[] = [
     status: "Delayed",
     deadline: "2025-05-10",
     issuedDate: "2024-12-05",
+    progress: 30,
   },
   {
     id: "po3",
@@ -248,6 +250,7 @@ const samplePurchaseOrders: PurchaseOrder[] = [
     status: "Completed",
     deadline: "2025-01-30",
     issuedDate: "2024-09-15",
+    progress: 100,
   },
 ];
 

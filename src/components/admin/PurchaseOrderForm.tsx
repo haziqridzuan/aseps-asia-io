@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { PurchaseOrder, Part } from "@/contexts/DataContext";
 import { Trash, Plus } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 interface PurchaseOrderFormProps {
   open: boolean;
@@ -43,6 +44,7 @@ export default function PurchaseOrderForm({
     status: "Active" | "Completed" | "Delayed";
     deadline: string;
     issuedDate: string;
+    progress: number;
     parts: Part[];
   }>({
     poNumber: "",
@@ -51,6 +53,7 @@ export default function PurchaseOrderForm({
     status: "Active",
     deadline: "",
     issuedDate: new Date().toISOString().substring(0, 10),
+    progress: 0,
     parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
   });
   
@@ -63,6 +66,7 @@ export default function PurchaseOrderForm({
         status: purchaseOrder.status,
         deadline: purchaseOrder.deadline.substring(0, 10),
         issuedDate: purchaseOrder.issuedDate.substring(0, 10),
+        progress: purchaseOrder.progress || 0, 
         parts: purchaseOrder.parts,
       });
     } else {
@@ -74,12 +78,13 @@ export default function PurchaseOrderForm({
         status: "Active",
         deadline: "",
         issuedDate: new Date().toISOString().substring(0, 10),
+        progress: 0,
         parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
       });
     }
   }, [purchaseOrder, open]);
   
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
   
@@ -113,6 +118,22 @@ export default function PurchaseOrderForm({
       return { ...prev, parts: newParts };
     });
   };
+
+  // Calculate progress based on parts status
+  const calculateProgressFromParts = () => {
+    if (!formData.parts.length) return 0;
+    
+    const completedParts = formData.parts.filter(part => part.status === "Completed").length;
+    return Math.round((completedParts / formData.parts.length) * 100);
+  };
+  
+  // Update progress when parts status changes
+  useEffect(() => {
+    const calculatedProgress = calculateProgressFromParts();
+    if (formData.progress === 0 || formData.progress === undefined) {
+      setFormData(prev => ({ ...prev, progress: calculatedProgress }));
+    }
+  }, [formData.parts]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,6 +272,29 @@ export default function PurchaseOrderForm({
                 required
               />
             </div>
+          </div>
+          
+          {/* Progress Section */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="progress">Progress: {formData.progress}%</Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleChange("progress", calculateProgressFromParts())}
+              >
+                Auto-calculate
+              </Button>
+            </div>
+            <Slider
+              id="progress"
+              value={[formData.progress]}
+              min={0}
+              max={100}
+              step={1}
+              onValueChange={(values) => handleChange("progress", values[0])}
+            />
           </div>
           
           <div>
