@@ -4,7 +4,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Loader2, Database } from "lucide-react";
+import { Loader2, Database, File as FileIcon, Users as UsersIcon, Package as PackageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
               className="w-full justify-start"
               onClick={() => window.location.href = "/admin/projects"}
             >
-              <File className="mr-2 h-4 w-4" />
+              <FileIcon className="mr-2 h-4 w-4" />
               Manage Projects
             </Button>
             
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
               className="w-full justify-start"
               onClick={() => window.location.href = "/admin/clients"}
             >
-              <Users className="mr-2 h-4 w-4" />
+              <UsersIcon className="mr-2 h-4 w-4" />
               Manage Clients
             </Button>
             
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
               className="w-full justify-start"
               onClick={() => window.location.href = "/admin/suppliers"}
             >
-              <Package className="mr-2 h-4 w-4" />
+              <PackageIcon className="mr-2 h-4 w-4" />
               Manage Suppliers
             </Button>
           </div>
