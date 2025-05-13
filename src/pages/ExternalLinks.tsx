@@ -109,12 +109,12 @@ export default function ExternalLinks() {
             
             <div>
               <label className="text-sm font-medium mb-2 block">Type</label>
-              <Select value={typeFilter || ""} onValueChange={(value) => setTypeFilter(value || null)}>
+              <Select value={typeFilter || "all"} onValueChange={(value) => setTypeFilter(value === "all" ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Report">Reports</SelectItem>
                   <SelectItem value="Photo">Photos</SelectItem>
                   <SelectItem value="Tracking">Tracking</SelectItem>
@@ -124,12 +124,12 @@ export default function ExternalLinks() {
             
             <div>
               <label className="text-sm font-medium mb-2 block">Project</label>
-              <Select value={projectFilter || ""} onValueChange={(value) => setProjectFilter(value || null)}>
+              <Select value={projectFilter || "all"} onValueChange={(value) => setProjectFilter(value === "all" ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Projects</SelectItem>
+                  <SelectItem value="all">All Projects</SelectItem>
                   {projects.map(project => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -141,12 +141,12 @@ export default function ExternalLinks() {
             
             <div>
               <label className="text-sm font-medium mb-2 block">Supplier</label>
-              <Select value={supplierFilter || ""} onValueChange={(value) => setSupplierFilter(value || null)}>
+              <Select value={supplierFilter || "all"} onValueChange={(value) => setSupplierFilter(value === "all" ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Suppliers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Suppliers</SelectItem>
+                  <SelectItem value="all">All Suppliers</SelectItem>
                   {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
