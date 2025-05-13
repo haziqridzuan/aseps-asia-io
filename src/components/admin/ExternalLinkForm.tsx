@@ -217,14 +217,14 @@ export default function ExternalLinkForm({
             <div className="space-y-2">
               <Label htmlFor="supplier">Related Supplier (Optional)</Label>
               <Select
-                value={formData.supplierId || ""}
-                onValueChange={(value) => handleChange("supplierId", value || undefined)}
+                value={formData.supplierId || "none"}
+                onValueChange={(value) => handleChange("supplierId", value === "none" ? undefined : value)}
               >
                 <SelectTrigger id="supplier">
                   <SelectValue placeholder="Select a supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {suppliers.map((supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
@@ -237,15 +237,15 @@ export default function ExternalLinkForm({
             <div className="space-y-2">
               <Label htmlFor="po">Related Purchase Order (Optional)</Label>
               <Select
-                value={formData.poId || ""}
-                onValueChange={(value) => handleChange("poId", value || undefined)}
+                value={formData.poId || "none"}
+                onValueChange={(value) => handleChange("poId", value === "none" ? undefined : value)}
                 disabled={!formData.projectId || filteredPOs.length === 0}
               >
                 <SelectTrigger id="po">
                   <SelectValue placeholder={!formData.projectId ? "Select a project first" : filteredPOs.length === 0 ? "No POs for this project" : "Select a PO"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {filteredPOs.map((po) => (
                     <SelectItem key={po.id} value={po.id}>
                       {po.poNumber}
