@@ -1,15 +1,39 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Loader2, Database, File as FileIcon, Users as UsersIcon, Package as PackageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { checkSupabaseConnection } from "@/integrations/supabase/client";
 
 export default function AdminDashboard() {
-  const { projects, clients, suppliers, purchaseOrders, externalLinks, generateDummyData, syncWithSupabase, isLoading } = useData();
+  const { 
+    projects, 
+    clients, 
+    suppliers, 
+    purchaseOrders, 
+    externalLinks, 
+    generateDummyData, 
+    syncWithSupabase, 
+    loadFromSupabase,
+    isLoading 
+  } = useData();
+  
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  
+  // Check Supabase connection on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      const connected = await checkSupabaseConnection();
+      setIsConnected(connected);
+    };
+    
+    checkConnection();
+  }, []);
   
   const handleSyncWithSupabase = async () => {
     setIsSyncing(true);
@@ -26,6 +50,25 @@ export default function AdminDashboard() {
     }
   };
   
+  const handleLoadFromSupabase = async () => {
+    setIsLoading(true);
+    
+    try {
+      toast.info("Loading data from Supabase...");
+      const result = await loadFromSupabase();
+      if (result.success) {
+        toast.success("Data loaded successfully from Supabase!");
+      } else {
+        toast.error("Failed to load data from Supabase");
+      }
+    } catch (error) {
+      console.error("Error loading from Supabase:", error);
+      toast.error("Failed to load data from Supabase");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleGenerateDummyData = () => {
     generateDummyData();
     toast.success("Demo data generated successfully!");
@@ -39,14 +82,32 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            disabled={isLoading}
+            disabled={isLoading || isSyncing}
             onClick={handleGenerateDummyData}
           >
             Generate Demo Data
           </Button>
           
           <Button 
-            disabled={isSyncing} 
+            variant="outline"
+            disabled={isLoading || isSyncing || !isConnected}
+            onClick={handleLoadFromSupabase}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Database className="mr-2 h-4 w-4" />
+                Load from Supabase
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            disabled={isSyncing || !isConnected} 
             onClick={handleSyncWithSupabase}
           >
             {isSyncing ? (
@@ -63,6 +124,16 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
+      
+      {!isConnected && (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4">
+            <p className="text-amber-800">
+              Supabase connection issue. Please check your connection settings or try again later.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

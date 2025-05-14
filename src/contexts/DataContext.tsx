@@ -1,7 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useToast } from "@/hooks/use-toast";
 
-// Types for our data
+import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { v4 as uuidv4 } from 'uuid';
+import { createDummyData, DataState } from '@/data/dummy-data';
+import { syncAllData, loadAllData } from '@/integrations/supabase/dataSync';
+import { toast } from "sonner";
+
+// Define Types
 export interface Project {
   id: string;
   name: string;
@@ -11,42 +15,31 @@ export interface Project {
   progress: number;
   startDate: string;
   endDate: string;
-  projectManager: string;
+  projectManager?: string;
   description?: string;
 }
 
 export interface Client {
   id: string;
   name: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  location: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
 }
 
 export interface Supplier {
   id: string;
   name: string;
-  country: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  rating: number;
-  onTimeDelivery: number;
-  comments: { positive: string[]; negative: string[] };
-  location?: string; // Adding location property
-}
-
-export interface PurchaseOrder {
-  id: string;
-  poNumber: string;
-  projectId: string;
-  supplierId: string;
-  parts: Part[];
-  status: "Active" | "Completed" | "Delayed";
-  deadline: string;
-  issuedDate: string;
-  progress?: number; // Add progress field
+  country?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  rating?: number;
+  onTimeDelivery?: number;
+  location?: string;
+  positiveComments?: string[];
+  negativeComments?: string[];
 }
 
 export interface Part {
@@ -56,17 +49,29 @@ export interface Part {
   status: "In Progress" | "Completed" | "Pending" | "Delayed";
 }
 
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string;
+  projectId: string;
+  supplierId: string;
+  status: "Active" | "Completed" | "Delayed";
+  deadline: string;
+  issuedDate: string;
+  parts: Part[];
+  progress?: number;
+}
+
 export interface ExternalLink {
   id: string;
   type: "Report" | "Photo" | "Tracking";
   projectId: string;
-  poId?: string;
   supplierId?: string;
   title: string;
   url: string;
   date: string;
 }
 
+// Define Context Type
 interface DataContextType {
   projects: Project[];
   clients: Client[];
@@ -74,391 +79,406 @@ interface DataContextType {
   purchaseOrders: PurchaseOrder[];
   externalLinks: ExternalLink[];
   isLoading: boolean;
-  error: string | null;
+  
+  // CRUD Operations
   addProject: (project: Omit<Project, "id">) => void;
-  updateProject: (id: string, project: Partial<Project>) => void;
+  updateProject: (project: Project) => void;
   deleteProject: (id: string) => void;
+  
   addClient: (client: Omit<Client, "id">) => void;
-  updateClient: (id: string, client: Partial<Client>) => void;
+  updateClient: (client: Client) => void;
   deleteClient: (id: string) => void;
+  
   addSupplier: (supplier: Omit<Supplier, "id">) => void;
-  updateSupplier: (id: string, supplier: Partial<Supplier>) => void;
+  updateSupplier: (supplier: Supplier) => void;
   deleteSupplier: (id: string) => void;
-  addPurchaseOrder: (po: Omit<PurchaseOrder, "id">) => void;
-  updatePurchaseOrder: (id: string, po: Partial<PurchaseOrder>) => void;
+  
+  addPurchaseOrder: (purchaseOrder: Omit<PurchaseOrder, "id">) => void;
+  updatePurchaseOrder: (purchaseOrder: PurchaseOrder) => void;
   deletePurchaseOrder: (id: string) => void;
-  addExternalLink: (link: Omit<ExternalLink, "id">) => void;
-  updateExternalLink: (id: string, link: Partial<ExternalLink>) => void;
+  
+  addExternalLink: (externalLink: Omit<ExternalLink, "id">) => void;
+  updateExternalLink: (externalLink: ExternalLink) => void;
   deleteExternalLink: (id: string) => void;
+  
+  // Utility Functions
   generateDummyData: () => void;
   syncWithSupabase: () => Promise<void>;
-  clearAllData: () => Promise<void>; // Adding clearAllData function
+  loadFromSupabase: () => Promise<{ success: boolean }>;
 }
 
+// Create Context
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Sample data for demonstration
-const sampleProjects: Project[] = [
-  {
-    id: "p1",
-    name: "Factory Automation System",
-    clientId: "c1",
-    location: "Shanghai, China",
-    status: "In Progress",
-    progress: 65,
-    startDate: "2025-01-15",
-    endDate: "2025-07-30",
-    projectManager: "John Smith",
-    description: "Factory automation system for consumer electronics production line.",
-  },
-  {
-    id: "p2",
-    name: "Healthcare Equipment",
-    clientId: "c2",
-    location: "Bangkok, Thailand",
-    status: "Delayed",
-    progress: 40,
-    startDate: "2024-11-01",
-    endDate: "2025-06-15",
-    projectManager: "Jessica Chen",
-    description: "Medical device manufacturing for hospital equipment.",
-  },
-  {
-    id: "p3",
-    name: "Automotive Parts",
-    clientId: "c3",
-    location: "Jakarta, Indonesia",
-    status: "Completed",
-    progress: 100,
-    startDate: "2024-08-15",
-    endDate: "2025-02-28",
-    projectManager: "Michael Wong",
-    description: "Precision automotive parts for luxury vehicle manufacturer.",
-  },
-];
-
-const sampleClients: Client[] = [
-  {
-    id: "c1",
-    name: "Tech Innovations Inc.",
-    contactPerson: "Thomas Anderson",
-    email: "tanderson@techinnovations.com",
-    phone: "+1-555-234-5678",
-    location: "San Francisco, USA",
-  },
-  {
-    id: "c2",
-    name: "MediHealth Solutions",
-    contactPerson: "Sarah Johnson",
-    email: "sjohnson@medihealth.com",
-    phone: "+1-555-876-5432",
-    location: "Boston, USA",
-  },
-  {
-    id: "c3",
-    name: "AutoPrecision GmbH",
-    contactPerson: "Klaus Mueller",
-    email: "kmueller@autoprecision.de",
-    phone: "+49-555-123-4567",
-    location: "Munich, Germany",
-  },
-];
-
-const sampleSuppliers: Supplier[] = [
-  {
-    id: "s1",
-    name: "Shanghai Electronics Co.",
-    country: "China",
-    contactPerson: "Li Wei",
-    email: "liwei@shanghaielectronics.cn",
-    phone: "+86-555-123-4567",
-    rating: 4.5,
-    onTimeDelivery: 92,
-    comments: {
-      positive: ["High quality components", "Responsive communication"],
-      negative: ["Occasional shipping delays"],
-    },
-  },
-  {
-    id: "s2",
-    name: "Bangkok Precision Parts",
-    country: "Thailand",
-    contactPerson: "Somchai Thongchai",
-    email: "somchai@bangkokprecision.th",
-    phone: "+66-555-987-6543",
-    rating: 4.2,
-    onTimeDelivery: 88,
-    comments: {
-      positive: ["Competitive pricing", "Reliable quality"],
-      negative: ["Communication can be slow"],
-    },
-  },
-  {
-    id: "s3",
-    name: "Jakarta Industrial Solutions",
-    country: "Indonesia",
-    contactPerson: "Budi Santoso",
-    email: "budi@jakartaindustrial.id",
-    phone: "+62-555-765-4321",
-    rating: 3.8,
-    onTimeDelivery: 85,
-    comments: {
-      positive: ["Flexible with custom orders", "Good pricing"],
-      negative: ["Quality control issues", "Delivery delays"],
-    },
-  },
-];
-
-const samplePurchaseOrders: PurchaseOrder[] = [
-  {
-    id: "po1",
-    poNumber: "PO-2025-001",
-    projectId: "p1",
-    supplierId: "s1",
-    parts: [
-      { id: "part1", name: "Control Panel", quantity: 50, status: "In Progress" },
-      { id: "part2", name: "Sensor Array", quantity: 200, status: "Completed" },
-    ],
-    status: "Active",
-    deadline: "2025-06-15",
-    issuedDate: "2025-01-20",
-    progress: 65,
-  },
-  {
-    id: "po2",
-    poNumber: "PO-2025-002",
-    projectId: "p2",
-    supplierId: "s2",
-    parts: [
-      { id: "part3", name: "Surgical Steel Components", quantity: 500, status: "Delayed" },
-      { id: "part4", name: "Plastic Casings", quantity: 300, status: "In Progress" },
-    ],
-    status: "Delayed",
-    deadline: "2025-05-10",
-    issuedDate: "2024-12-05",
-    progress: 30,
-  },
-  {
-    id: "po3",
-    poNumber: "PO-2025-003",
-    projectId: "p3",
-    supplierId: "s3",
-    parts: [
-      { id: "part5", name: "Transmission Gears", quantity: 100, status: "Completed" },
-      { id: "part6", name: "Interior Panels", quantity: 50, status: "Completed" },
-    ],
-    status: "Completed",
-    deadline: "2025-01-30",
-    issuedDate: "2024-09-15",
-    progress: 100,
-  },
-];
-
-const sampleExternalLinks: ExternalLink[] = [
-  {
-    id: "l1",
-    type: "Report",
-    projectId: "p1",
-    poId: "po1",
-    title: "Weekly Progress Report - Factory Automation",
-    url: "/reports/factory-automation-week12.pdf",
-    date: "2025-03-15",
-  },
-  {
-    id: "l2",
-    type: "Photo",
-    projectId: "p2",
-    supplierId: "s2",
-    title: "Healthcare Equipment Production Photos",
-    url: "/photos/healthcare-production-mar2025.zip",
-    date: "2025-03-10",
-  },
-  {
-    id: "l3",
-    type: "Tracking",
-    projectId: "p3",
-    poId: "po3",
-    title: "Automotive Parts Shipment Tracking",
-    url: "/tracking/auto-parts-shipment-feb2025.xlsx",
-    date: "2025-02-20",
-  },
-];
-
+// Provider Component
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(sampleProjects);
-  const [clients, setClients] = useState<Client[]>(sampleClients);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
-  const [externalLinks, setExternalLinks] = useState<ExternalLink[]>(sampleExternalLinks);
+  // Initialize with empty data
+  const [data, setData] = useState<DataState>(() => {
+    // Try to load from localStorage first
+    const savedData = localStorage.getItem('asepsData');
+    return savedData ? JSON.parse(savedData) : createDummyData();
+  });
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  // CRUD operations for projects
-  const addProject = (project: Omit<Project, "id">) => {
-    const newProject = { ...project, id: `p${Date.now()}` };
-    setProjects([...projects, newProject]);
-  };
-
-  const updateProject = (id: string, project: Partial<Project>) => {
-    setProjects(projects.map(p => p.id === id ? { ...p, ...project } : p));
-  };
-
-  const deleteProject = (id: string) => {
-    setProjects(projects.filter(p => p.id !== id));
-  };
-
-  // CRUD operations for clients
-  const addClient = (client: Omit<Client, "id">) => {
-    const newClient = { ...client, id: `c${Date.now()}` };
-    setClients([...clients, newClient]);
-  };
-
-  const updateClient = (id: string, client: Partial<Client>) => {
-    setClients(clients.map(c => c.id === id ? { ...c, ...client } : c));
-  };
-
-  const deleteClient = (id: string) => {
-    setClients(clients.filter(c => c.id !== id));
-  };
-
-  // CRUD operations for suppliers
-  const addSupplier = (supplier: Omit<Supplier, "id">) => {
-    const newSupplier = {
-      ...supplier,
-      id: `s${Date.now()}`,
-      comments: supplier.comments || { positive: [], negative: [] }
-    };
-    setSuppliers([...suppliers, newSupplier]);
-  };
-
-  const updateSupplier = (id: string, supplier: Partial<Supplier>) => {
-    setSuppliers(suppliers.map(s => s.id === id ? { ...s, ...supplier } : s));
-  };
-
-  const deleteSupplier = (id: string) => {
-    setSuppliers(suppliers.filter(s => s.id !== id));
-  };
-
-  // CRUD operations for purchase orders
-  const addPurchaseOrder = (po: Omit<PurchaseOrder, "id">) => {
-    const newPO = { ...po, id: `po${Date.now()}` };
-    setPurchaseOrders([...purchaseOrders, newPO]);
-  };
-
-  const updatePurchaseOrder = (id: string, po: Partial<PurchaseOrder>) => {
-    setPurchaseOrders(purchaseOrders.map(p => p.id === id ? { ...p, ...po } : p));
-  };
-
-  const deletePurchaseOrder = (id: string) => {
-    setPurchaseOrders(purchaseOrders.filter(p => p.id !== id));
-  };
-
-  // CRUD operations for external links
-  const addExternalLink = (link: Omit<ExternalLink, "id">) => {
-    const newLink = { ...link, id: `l${Date.now()}` };
-    setExternalLinks([...externalLinks, newLink]);
-  };
-
-  const updateExternalLink = (id: string, link: Partial<ExternalLink>) => {
-    setExternalLinks(externalLinks.map(l => l.id === id ? { ...l, ...link } : l));
-  };
-
-  const deleteExternalLink = (id: string) => {
-    setExternalLinks(externalLinks.filter(l => l.id !== id));
-  };
-
-  // Generate dummy data for demo purposes
-  const generateDummyData = () => {
-    setProjects(sampleProjects);
-    setClients(sampleClients);
-    setSuppliers(sampleSuppliers);
-    setPurchaseOrders(samplePurchaseOrders);
-    setExternalLinks(sampleExternalLinks);
-    
-    toast({
-      title: "Demo data generated",
-      description: "Sample data has been loaded successfully",
+  
+  // Save data to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('asepsData', JSON.stringify(data));
+  }, [data]);
+  
+  // CRUD Operations for Projects
+  const addProject = useCallback((project: Omit<Project, "id">) => {
+    setData(prev => {
+      const newProject = { ...project, id: uuidv4() };
+      return { ...prev, projects: [...prev.projects, newProject] };
     });
-  };
-
-  // This function would sync data with Supabase in a real implementation
-  const syncWithSupabase = async () => {
+  }, []);
+  
+  const updateProject = useCallback((project: Project) => {
+    setData(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => p.id === project.id ? project : p)
+    }));
+  }, []);
+  
+  const deleteProject = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(p => p.id !== id),
+      // Also delete related purchase orders
+      purchaseOrders: prev.purchaseOrders.filter(po => po.projectId !== id),
+      // Also delete related external links
+      externalLinks: prev.externalLinks.filter(el => el.projectId !== id)
+    }));
+  }, []);
+  
+  // CRUD Operations for Clients
+  const addClient = useCallback((client: Omit<Client, "id">) => {
+    setData(prev => ({
+      ...prev,
+      clients: [...prev.clients, { ...client, id: uuidv4() }]
+    }));
+  }, []);
+  
+  const updateClient = useCallback((client: Client) => {
+    setData(prev => ({
+      ...prev,
+      clients: prev.clients.map(c => c.id === client.id ? client : c)
+    }));
+  }, []);
+  
+  const deleteClient = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      clients: prev.clients.filter(c => c.id !== id),
+      // Update projects with this client to have null clientId
+      projects: prev.projects.map(p => 
+        p.clientId === id ? { ...p, clientId: "" } : p
+      )
+    }));
+  }, []);
+  
+  // CRUD Operations for Suppliers
+  const addSupplier = useCallback((supplier: Omit<Supplier, "id">) => {
+    setData(prev => ({
+      ...prev,
+      suppliers: [...prev.suppliers, { ...supplier, id: uuidv4() }]
+    }));
+  }, []);
+  
+  const updateSupplier = useCallback((supplier: Supplier) => {
+    setData(prev => ({
+      ...prev,
+      suppliers: prev.suppliers.map(s => s.id === supplier.id ? supplier : s)
+    }));
+  }, []);
+  
+  const deleteSupplier = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      suppliers: prev.suppliers.filter(s => s.id !== id),
+      // Also delete related purchase orders
+      purchaseOrders: prev.purchaseOrders.filter(po => po.supplierId !== id),
+      // Remove supplier from external links
+      externalLinks: prev.externalLinks.map(el => 
+        el.supplierId === id ? { ...el, supplierId: undefined } : el
+      )
+    }));
+  }, []);
+  
+  // CRUD Operations for Purchase Orders
+  const addPurchaseOrder = useCallback((purchaseOrder: Omit<PurchaseOrder, "id">) => {
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: [...prev.purchaseOrders, { ...purchaseOrder, id: uuidv4() }]
+    }));
+  }, []);
+  
+  const updatePurchaseOrder = useCallback((purchaseOrder: PurchaseOrder) => {
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: prev.purchaseOrders.map(po => po.id === purchaseOrder.id ? purchaseOrder : po)
+    }));
+  }, []);
+  
+  const deletePurchaseOrder = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: prev.purchaseOrders.filter(po => po.id !== id),
+      // Also update external links
+      externalLinks: prev.externalLinks.map(el => 
+        el.supplierId === id ? { ...el, supplierId: undefined } : el
+      )
+    }));
+  }, []);
+  
+  // CRUD Operations for External Links
+  const addExternalLink = useCallback((externalLink: Omit<ExternalLink, "id">) => {
+    setData(prev => ({
+      ...prev,
+      externalLinks: [...prev.externalLinks, { ...externalLink, id: uuidv4() }]
+    }));
+  }, []);
+  
+  const updateExternalLink = useCallback((externalLink: ExternalLink) => {
+    setData(prev => ({
+      ...prev,
+      externalLinks: prev.externalLinks.map(el => el.id === externalLink.id ? externalLink : el)
+    }));
+  }, []);
+  
+  const deleteExternalLink = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      externalLinks: prev.externalLinks.filter(el => el.id !== id)
+    }));
+  }, []);
+  
+  // Generate Dummy Data
+  const generateDummyData = useCallback(() => {
+    const dummyData = createDummyData();
+    setData(dummyData);
+  }, []);
+  
+  // Sync with Supabase
+  const syncWithSupabase = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
-    
     try {
-      // Simulate API call to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Transform data to match Supabase schema
+      const projectsToSync = data.projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        client_id: p.clientId,
+        location: p.location,
+        status: p.status,
+        progress: p.progress,
+        start_date: p.startDate,
+        end_date: p.endDate,
+        project_manager: p.projectManager,
+        description: p.description
+      }));
       
-      toast({
-        title: "Data synchronized",
-        description: "All changes have been saved to the database",
-      });
-    } catch (err) {
-      setError("Failed to sync with database");
-      toast({
-        title: "Sync failed",
-        description: "Could not connect to the database",
-        variant: "destructive",
-      });
+      const clientsToSync = data.clients.map(c => ({
+        id: c.id,
+        name: c.name,
+        contact_person: c.contactPerson,
+        email: c.email,
+        phone: c.phone,
+        location: c.location
+      }));
+      
+      const suppliersToSync = data.suppliers.map(s => ({
+        id: s.id,
+        name: s.name,
+        country: s.country,
+        contact_person: s.contactPerson,
+        email: s.email,
+        phone: s.phone,
+        rating: s.rating,
+        on_time_delivery: s.onTimeDelivery,
+        location: s.location,
+        positive_comments: s.positiveComments || [],
+        negative_comments: s.negativeComments || []
+      }));
+      
+      const purchaseOrdersToSync = data.purchaseOrders.map(po => ({
+        id: po.id,
+        po_number: po.poNumber,
+        project_id: po.projectId,
+        supplier_id: po.supplierId,
+        status: po.status,
+        deadline: po.deadline,
+        issued_date: po.issuedDate,
+        progress: po.progress || 0,
+        parts: po.parts
+      }));
+      
+      const externalLinksToSync = data.externalLinks.map(el => ({
+        id: el.id,
+        type: el.type,
+        project_id: el.projectId,
+        supplier_id: el.supplierId,
+        title: el.title,
+        url: el.url,
+        date: el.date
+      }));
+      
+      await syncAllData(
+        projectsToSync,
+        clientsToSync,
+        suppliersToSync,
+        purchaseOrdersToSync,
+        externalLinksToSync
+      );
+      
+    } catch (error) {
+      console.error("Error syncing with Supabase:", error);
+      toast.error("Failed to sync with Supabase");
     } finally {
       setIsLoading(false);
     }
+  }, [data]);
+  
+  // Load data from Supabase
+  const loadFromSupabase = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await loadAllData();
+      
+      if (result.success) {
+        // Transform data to match our app's schema
+        const transformedProjects = result.projects.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          clientId: p.client_id || "",
+          location: p.location || "",
+          status: p.status || "Pending",
+          progress: p.progress || 0,
+          startDate: p.start_date,
+          endDate: p.end_date,
+          projectManager: p.project_manager,
+          description: p.description
+        }));
+        
+        const transformedClients = result.clients.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          contactPerson: c.contact_person,
+          email: c.email,
+          phone: c.phone,
+          location: c.location
+        }));
+        
+        const transformedSuppliers = result.suppliers.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          country: s.country,
+          contactPerson: s.contact_person,
+          email: s.email,
+          phone: s.phone,
+          rating: s.rating,
+          onTimeDelivery: s.on_time_delivery,
+          location: s.location,
+          positiveComments: s.positive_comments || [],
+          negativeComments: s.negative_comments || []
+        }));
+        
+        const transformedPurchaseOrders = result.purchaseOrders.map((po: any) => ({
+          id: po.id,
+          poNumber: po.po_number,
+          projectId: po.project_id,
+          supplierId: po.supplier_id,
+          status: po.status,
+          deadline: po.deadline,
+          issuedDate: po.issued_date,
+          progress: po.progress || 0,
+          parts: po.parts ? po.parts.map((part: any) => ({
+            id: part.id,
+            name: part.name,
+            quantity: part.quantity,
+            status: part.status || "Pending"
+          })) : []
+        }));
+        
+        const transformedExternalLinks = result.externalLinks.map((el: any) => ({
+          id: el.id,
+          type: el.type,
+          projectId: el.project_id,
+          supplierId: el.supplier_id,
+          title: el.title,
+          url: el.url,
+          date: el.date
+        }));
+        
+        // Update local state with data from Supabase
+        setData({
+          projects: transformedProjects,
+          clients: transformedClients,
+          suppliers: transformedSuppliers,
+          purchaseOrders: transformedPurchaseOrders,
+          externalLinks: transformedExternalLinks
+        });
+        
+        return { success: true };
+      }
+      
+      return { success: false };
+    } catch (error) {
+      console.error("Error loading from Supabase:", error);
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  const value = {
+    // Data State
+    projects: data.projects,
+    clients: data.clients,
+    suppliers: data.suppliers,
+    purchaseOrders: data.purchaseOrders,
+    externalLinks: data.externalLinks,
+    isLoading,
+    
+    // CRUD Operations
+    addProject,
+    updateProject,
+    deleteProject,
+    
+    addClient,
+    updateClient,
+    deleteClient,
+    
+    addSupplier,
+    updateSupplier,
+    deleteSupplier,
+    
+    addPurchaseOrder,
+    updatePurchaseOrder,
+    deletePurchaseOrder,
+    
+    addExternalLink,
+    updateExternalLink,
+    deleteExternalLink,
+    
+    // Utility Functions
+    generateDummyData,
+    syncWithSupabase,
+    loadFromSupabase
   };
   
-  // Clear all data
-  const clearAllData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Clear all data arrays
-      setProjects([]);
-      setClients([]);
-      setSuppliers([]);
-      setPurchaseOrders([]);
-      setExternalLinks([]);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Data cleared",
-        description: "All data has been cleared successfully",
-      });
-    } catch (err) {
-      setError("Failed to clear data");
-      toast({
-        title: "Clear failed",
-        description: "Could not clear the data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <DataContext.Provider value={{
-      projects, clients, suppliers, purchaseOrders, externalLinks,
-      isLoading, error,
-      addProject, updateProject, deleteProject,
-      addClient, updateClient, deleteClient,
-      addSupplier, updateSupplier, deleteSupplier,
-      addPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder,
-      addExternalLink, updateExternalLink, deleteExternalLink,
-      generateDummyData, syncWithSupabase, clearAllData
-    }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
 }
 
-export function useData() {
+// Custom Hook to use the context
+export const useData = (): DataContextType => {
   const context = useContext(DataContext);
   if (context === undefined) {
     throw new Error("useData must be used within a DataProvider");
   }
   return context;
-}
+};
