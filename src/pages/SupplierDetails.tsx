@@ -295,9 +295,9 @@ export default function SupplierDetails() {
             <CardTitle className="text-lg font-medium text-green-600">Positive Comments</CardTitle>
           </CardHeader>
           <CardContent>
-            {supplier.comments.positive.length > 0 ? (
+            {supplier.positiveComments && supplier.positiveComments.length > 0 ? (
               <ul className="space-y-2">
-                {supplier.comments.positive.map((comment, index) => (
+                {supplier.positiveComments.map((comment, index) => (
                   <li key={index} className="p-2 bg-green-50 rounded-md text-green-800 animate-fade-in">
                     • {comment}
                   </li>
@@ -315,9 +315,9 @@ export default function SupplierDetails() {
             <CardTitle className="text-lg font-medium text-red-600">Areas for Improvement</CardTitle>
           </CardHeader>
           <CardContent>
-            {supplier.comments.negative.length > 0 ? (
+            {supplier.negativeComments && supplier.negativeComments.length > 0 ? (
               <ul className="space-y-2">
-                {supplier.comments.negative.map((comment, index) => (
+                {supplier.negativeComments.map((comment, index) => (
                   <li key={index} className="p-2 bg-red-50 rounded-md text-red-800 animate-fade-in">
                     • {comment}
                   </li>

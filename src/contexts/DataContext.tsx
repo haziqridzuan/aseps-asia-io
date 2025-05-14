@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { createDummyData, DataState } from '@/data/dummy-data';
@@ -106,6 +105,9 @@ interface DataContextType {
   generateDummyData: () => void;
   syncWithSupabase: () => Promise<void>;
   loadFromSupabase: () => Promise<{ success: boolean }>;
+  
+  // Add clearAllData function
+  clearAllData: () => Promise<void>;
 }
 
 // Create Context
@@ -433,6 +435,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
+  // Add clearAllData implementation
+  const clearAllData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const emptyData = {
+        projects: [],
+        clients: [],
+        suppliers: [],
+        purchaseOrders: [],
+        externalLinks: []
+      };
+      setData(emptyData);
+      localStorage.removeItem('asepsData');
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error clearing data:", error);
+      return Promise.reject(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
   const value = {
     // Data State
     projects: data.projects,
@@ -466,7 +490,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Utility Functions
     generateDummyData,
     syncWithSupabase,
-    loadFromSupabase
+    loadFromSupabase,
+    clearAllData
   };
   
   return (
