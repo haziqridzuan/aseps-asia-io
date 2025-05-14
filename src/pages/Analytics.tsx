@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,8 +8,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,11 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChartBar } from "lucide-react";
+import { ChartBar, CalendarRange, Filter } from "lucide-react";
+import { 
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
 
 export default function Analytics() {
   const { projects, suppliers, purchaseOrders } = useData();
   const [dateRange, setDateRange] = useState("all");
+  const [selectedProject, setSelectedProject] = useState("all");
   
   // Filter data based on date range
   const filterByDateRange = (date: string) => {
@@ -59,11 +63,19 @@ export default function Analytics() {
     return false;
   };
   
+  // Filter by project
+  const filterByProject = (projectId: string) => {
+    if (selectedProject === "all") return true;
+    return projectId === selectedProject;
+  };
+  
   // Filter projects
   const filteredProjects = projects.filter(project => filterByDateRange(project.startDate));
   
-  // Filter POs
-  const filteredPOs = purchaseOrders.filter(po => filterByDateRange(po.issuedDate));
+  // Filter POs by date range and project
+  const filteredPOs = purchaseOrders.filter(po => 
+    filterByDateRange(po.issuedDate) && filterByProject(po.projectId)
+  );
   
   // Project status data for chart
   const projectStatusData = [
@@ -72,6 +84,30 @@ export default function Analytics() {
     { name: "Pending", value: filteredProjects.filter(p => p.status === "Pending").length, color: "#f59e0b" },
     { name: "Delayed", value: filteredProjects.filter(p => p.status === "Delayed").length, color: "#ef4444" },
   ].filter(item => item.value > 0);
+  
+  // Purchase Order status data for chart
+  const poStatusData = useMemo(() => {
+    // Calculate the number of POs with different statuses
+    const statusCounts = {
+      "Completed": 0,
+      "Active": 0, // "In Progress" equivalent
+      "Delayed": 0
+    };
+    
+    // Count POs by status
+    filteredPOs.forEach(po => {
+      if (statusCounts.hasOwnProperty(po.status)) {
+        statusCounts[po.status as keyof typeof statusCounts]++;
+      }
+    });
+    
+    // Format data for chart
+    return [
+      { name: "Completed", value: statusCounts.Completed, color: "#22c55e" },
+      { name: "Active", value: statusCounts.Active, color: "#3b82f6" },
+      { name: "Delayed", value: statusCounts.Delayed, color: "#ef4444" },
+    ].filter(item => item.value > 0);
+  }, [filteredPOs]);
   
   // Supplier performance data
   const supplierPerformanceData = suppliers
@@ -82,22 +118,47 @@ export default function Analytics() {
       onTimeDelivery: supplier.onTimeDelivery,
     }));
   
-  // Timeline adherence data
-  const timelineAdherenceData = [
-    { name: "Jan", onTime: 85, delayed: 15 },
-    { name: "Feb", onTime: 75, delayed: 25 },
-    { name: "Mar", onTime: 90, delayed: 10 },
-    { name: "Apr", onTime: 80, delayed: 20 },
-    { name: "May", onTime: 95, delayed: 5 },
-    { name: "Jun", onTime: 85, delayed: 15 },
-  ];
+  // Calculate spent by project from POs
+  const spentByProject = useMemo(() => {
+    const projectSpentMap = new Map<string, number>();
+    
+    // Initialize with all projects (even if they have no POs)
+    projects.forEach(project => {
+      projectSpentMap.set(project.id, 0);
+    });
+    
+    // Calculate spent for each project based on POs
+    filteredPOs.forEach(po => {
+      // Sum up all parts in the PO
+      const poTotal = po.parts.reduce((sum, part) => {
+        return sum + (part.quantity * (Math.floor(Math.random() * 1000) + 100)); // Random cost per part for demo
+      }, 0);
+      
+      // Add to the project's total
+      const currentSpent = projectSpentMap.get(po.projectId) || 0;
+      projectSpentMap.set(po.projectId, currentSpent + poTotal);
+    });
+    
+    // Convert to chart data format
+    return Array.from(projectSpentMap.entries())
+      .filter(([_, spent]) => spent > 0) // Only include projects with spent > 0
+      .map(([projectId, spent]) => {
+        const project = projects.find(p => p.id === projectId);
+        return {
+          name: project ? project.name.substring(0, 15) + (project.name.length > 15 ? "..." : "") : "Unknown",
+          projectId,
+          spent,
+        };
+      })
+      .sort((a, b) => b.spent - a.spent) // Sort by spent in descending order
+      .slice(0, 8); // Show top 8 projects
+  }, [filteredPOs, projects]);
   
-  // Budget spent by project
-  const budgetData = filteredProjects.slice(0, 5).map(project => ({
-    name: project.name.substring(0, 15) + (project.name.length > 15 ? "..." : ""),
-    budget: Math.floor(Math.random() * 100000) + 50000, // Random budget for demo
-    spent: Math.floor(Math.random() * 80000) + 20000, // Random spent for demo
-  }));
+  // Generate colors for budget chart
+  const budgetColors = [
+    "#9b87f5", "#7E69AB", "#6E59A5", "#D6BCFA", 
+    "#F97316", "#0EA5E9", "#D946EF", "#33C3F0"
+  ];
   
   // Calculate completion rate
   const completionRate = filteredProjects.length > 0 
@@ -112,20 +173,42 @@ export default function Analytics() {
           Analytics
         </h1>
         
-        <div>
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Date Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="month">Last 30 Days</SelectItem>
-                <SelectItem value="quarter">Last Quarter</SelectItem>
-                <SelectItem value="year">Last Year</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-2">
+            <CalendarRange className="h-4 w-4" />
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="month">Last 30 Days</SelectItem>
+                  <SelectItem value="quarter">Last Quarter</SelectItem>
+                  <SelectItem value="year">Last Year</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name.substring(0, 20) + (project.name.length > 20 ? "..." : "")}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       
@@ -144,114 +227,117 @@ export default function Analytics() {
           value={`${completionRate}%`}
         />
         <StatCard
-          title="Total Budget Spent"
-          value={`$${budgetData.reduce((sum, item) => sum + item.spent, 0).toLocaleString()}`}
+          title="Total Spent"
+          value={`$${spentByProject.reduce((sum, item) => sum + item.spent, 0).toLocaleString()}`}
         />
       </div>
       
-      {/* Project Status Distribution */}
-      <Card className="card-hover">
-        <CardHeader>
-          <CardTitle>Project Status Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={projectStatusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {projectStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} projects`, 'Count']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Supplier Performance */}
-      <Card className="card-hover">
-        <CardHeader>
-          <CardTitle>Supplier Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={supplierPerformanceData}
-                layout="vertical"
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 90,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={80} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="onTimeDelivery" name="On-Time Delivery (%)" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="rating" name="Rating (out of 5)" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Timeline Adherence */}
+        {/* Project Status Distribution */}
         <Card className="card-hover">
           <CardHeader>
-            <CardTitle>Timeline Adherence</CardTitle>
+            <CardTitle>Project Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={timelineAdherenceData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
+                <PieChart>
+                  <Pie
+                    data={projectStatusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {projectStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} projects`, 'Count']} />
                   <Legend />
-                  <Line type="monotone" dataKey="onTime" name="On Time (%)" stroke="#22c55e" strokeWidth={2} />
-                  <Line type="monotone" dataKey="delayed" name="Delayed (%)" stroke="#ef4444" strokeWidth={2} />
-                </LineChart>
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
         
-        {/* Budget Spent Analysis */}
+        {/* Purchase Order Status Chart - NEW */}
         <Card className="card-hover">
           <CardHeader>
-            <CardTitle>Budget Analysis by Project</CardTitle>
+            <CardTitle>Purchase Order Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={poStatusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {poStatusData.map((entry, index) => (
+                      <Cell key={`po-cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} POs`, 'Count']} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-6">
+        {/* Supplier Performance */}
+        <Card className="card-hover">
+          <CardHeader>
+            <CardTitle>Supplier Performance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={budgetData}
+                  data={supplierPerformanceData}
+                  layout="vertical"
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 90,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="name" type="category" width={80} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="onTimeDelivery" name="On-Time Delivery (%)" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="rating" name="Rating (out of 5)" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Budget Spent Analysis - UPDATED */}
+        <Card className="card-hover">
+          <CardHeader>
+            <CardTitle>Budget Spent Analysis by Project</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={spentByProject}
                   margin={{
                     top: 20,
                     right: 30,
@@ -264,8 +350,15 @@ export default function Analytics() {
                   <YAxis />
                   <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
                   <Legend />
-                  <Bar dataKey="budget" name="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="spent" name="Spent" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  {spentByProject.map((_, index) => (
+                    <Bar 
+                      key={`spent-bar-${index}`}
+                      dataKey="spent" 
+                      name="Amount Spent" 
+                      fill={budgetColors[index % budgetColors.length]} 
+                      radius={[4, 4, 0, 0]} 
+                    />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             </div>
