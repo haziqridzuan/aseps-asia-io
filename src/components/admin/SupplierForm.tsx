@@ -26,10 +26,8 @@ export function SupplierForm({ supplierId, onSuccess, onCancel }: SupplierFormPr
     phone: "",
     rating: 3,
     onTimeDelivery: 80,
-    comments: {
-      positive: [],
-      negative: [],
-    },
+    positiveComments: [],
+    negativeComments: [],
   });
   
   const [positiveComments, setPositiveComments] = useState("");
@@ -42,20 +40,18 @@ export function SupplierForm({ supplierId, onSuccess, onCancel }: SupplierFormPr
       if (supplier) {
         setFormData({
           name: supplier.name,
-          country: supplier.country,
-          contactPerson: supplier.contactPerson,
-          email: supplier.email,
-          phone: supplier.phone,
-          rating: supplier.rating,
-          onTimeDelivery: supplier.onTimeDelivery,
-          comments: {
-            positive: [...supplier.comments.positive],
-            negative: [...supplier.comments.negative],
-          },
+          country: supplier.country || "",
+          contactPerson: supplier.contactPerson || "",
+          email: supplier.email || "",
+          phone: supplier.phone || "",
+          rating: supplier.rating || 3,
+          onTimeDelivery: supplier.onTimeDelivery || 80,
+          positiveComments: [...(supplier.positiveComments || [])],
+          negativeComments: [...(supplier.negativeComments || [])],
         });
         
-        setPositiveComments(supplier.comments.positive.join('\n'));
-        setNegativeComments(supplier.comments.negative.join('\n'));
+        setPositiveComments((supplier.positiveComments || []).join('\n'));
+        setNegativeComments((supplier.negativeComments || []).join('\n'));
       }
     }
   }, [supplierId, suppliers]);
@@ -87,10 +83,8 @@ export function SupplierForm({ supplierId, onSuccess, onCancel }: SupplierFormPr
       // Process comments
       const processedFormData = {
         ...formData,
-        comments: {
-          positive: positiveComments.split('\n').filter(c => c.trim() !== ''),
-          negative: negativeComments.split('\n').filter(c => c.trim() !== ''),
-        }
+        positiveComments: positiveComments.split('\n').filter(c => c.trim() !== ''),
+        negativeComments: negativeComments.split('\n').filter(c => c.trim() !== '')
       };
       
       if (supplierId) {

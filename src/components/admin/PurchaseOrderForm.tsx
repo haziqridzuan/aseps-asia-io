@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useData } from "@/contexts/DataContext";
+import { useData, PurchaseOrder, Part } from "@/contexts/DataContext";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { PurchaseOrder, Part } from "@/contexts/DataContext";
 import { Trash, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
@@ -37,16 +36,7 @@ export default function PurchaseOrderForm({
   const { suppliers, projects, addPurchaseOrder, updatePurchaseOrder } = useData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [formData, setFormData] = useState<{
-    poNumber: string;
-    projectId: string;
-    supplierId: string;
-    status: "Active" | "Completed" | "Delayed";
-    deadline: string;
-    issuedDate: string;
-    progress: number;
-    parts: Part[];
-  }>({
+  const [formData, setFormData] = useState<Omit<PurchaseOrder, "id">>({
     poNumber: "",
     projectId: "",
     supplierId: "",

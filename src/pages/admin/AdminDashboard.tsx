@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +18,11 @@ export default function AdminDashboard() {
     generateDummyData, 
     syncWithSupabase, 
     loadFromSupabase,
-    isLoading: dataIsLoading
+    isLoading: dataLoading 
   } = useData();
   
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
   // Check Supabase connection on mount
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
   };
   
   const handleLoadFromSupabase = async () => {
-    setIsLoading(true);
+    setIsLoadingData(true);
     
     try {
       toast.info("Loading data from Supabase...");
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
       console.error("Error loading from Supabase:", error);
       toast.error("Failed to load data from Supabase");
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
   
@@ -81,7 +82,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing || dataIsLoading}
+            disabled={isLoadingData || isSyncing || dataLoading}
             onClick={handleGenerateDummyData}
           >
             Generate Demo Data
@@ -89,10 +90,10 @@ export default function AdminDashboard() {
           
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing || !isConnected || dataIsLoading}
+            disabled={isLoadingData || isSyncing || dataLoading || !isConnected}
             onClick={handleLoadFromSupabase}
           >
-            {isLoading ? (
+            {isLoadingData ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Loading...
@@ -106,7 +107,7 @@ export default function AdminDashboard() {
           </Button>
           
           <Button 
-            disabled={isSyncing || !isConnected || dataIsLoading} 
+            disabled={isSyncing || dataLoading || !isConnected} 
             onClick={handleSyncWithSupabase}
           >
             {isSyncing ? (

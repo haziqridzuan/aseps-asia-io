@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useData } from "@/contexts/DataContext";
+import { useData, ExternalLink } from "@/contexts/DataContext";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ExternalLink } from "@/contexts/DataContext";
 
 interface ExternalLinkFormProps {
   open: boolean;
@@ -35,15 +34,7 @@ export default function ExternalLinkForm({
   const { suppliers, projects, purchaseOrders, addExternalLink, updateExternalLink } = useData();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [formData, setFormData] = useState<{
-    title: string;
-    type: "Report" | "Photo" | "Tracking";
-    projectId: string;
-    supplierId?: string;
-    poId?: string;
-    url: string;
-    date: string;
-  }>({
+  const [formData, setFormData] = useState<Omit<ExternalLink, "id">>({
     title: "",
     type: "Report",
     projectId: "",

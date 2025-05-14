@@ -66,6 +66,7 @@ export interface ExternalLink {
   type: "Report" | "Photo" | "Tracking";
   projectId: string;
   supplierId?: string;
+  poId?: string;
   title: string;
   url: string;
   date: string;
@@ -82,23 +83,23 @@ interface DataContextType {
   
   // CRUD Operations
   addProject: (project: Omit<Project, "id">) => void;
-  updateProject: (project: Project) => void;
+  updateProject: (id: string, project: Omit<Project, "id">) => void;
   deleteProject: (id: string) => void;
   
   addClient: (client: Omit<Client, "id">) => void;
-  updateClient: (client: Client) => void;
+  updateClient: (id: string, client: Omit<Client, "id">) => void;
   deleteClient: (id: string) => void;
   
   addSupplier: (supplier: Omit<Supplier, "id">) => void;
-  updateSupplier: (supplier: Supplier) => void;
+  updateSupplier: (id: string, supplier: Omit<Supplier, "id">) => void;
   deleteSupplier: (id: string) => void;
   
   addPurchaseOrder: (purchaseOrder: Omit<PurchaseOrder, "id">) => void;
-  updatePurchaseOrder: (purchaseOrder: PurchaseOrder) => void;
+  updatePurchaseOrder: (id: string, purchaseOrder: Omit<PurchaseOrder, "id">) => void;
   deletePurchaseOrder: (id: string) => void;
   
   addExternalLink: (externalLink: Omit<ExternalLink, "id">) => void;
-  updateExternalLink: (externalLink: ExternalLink) => void;
+  updateExternalLink: (id: string, externalLink: Omit<ExternalLink, "id">) => void;
   deleteExternalLink: (id: string) => void;
   
   // Utility Functions
@@ -134,10 +135,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
   
-  const updateProject = useCallback((project: Project) => {
+  const updateProject = useCallback((id: string, project: Omit<Project, "id">) => {
     setData(prev => ({
       ...prev,
-      projects: prev.projects.map(p => p.id === project.id ? project : p)
+      projects: prev.projects.map(p => p.id === id ? { ...project, id } : p)
     }));
   }, []);
   
@@ -160,10 +161,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
   
-  const updateClient = useCallback((client: Client) => {
+  const updateClient = useCallback((id: string, client: Omit<Client, "id">) => {
     setData(prev => ({
       ...prev,
-      clients: prev.clients.map(c => c.id === client.id ? client : c)
+      clients: prev.clients.map(c => c.id === id ? { ...client, id } : c)
     }));
   }, []);
   
@@ -186,10 +187,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
   
-  const updateSupplier = useCallback((supplier: Supplier) => {
+  const updateSupplier = useCallback((id: string, supplier: Omit<Supplier, "id">) => {
     setData(prev => ({
       ...prev,
-      suppliers: prev.suppliers.map(s => s.id === supplier.id ? supplier : s)
+      suppliers: prev.suppliers.map(s => s.id === id ? { ...supplier, id } : s)
     }));
   }, []);
   
@@ -214,10 +215,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
   
-  const updatePurchaseOrder = useCallback((purchaseOrder: PurchaseOrder) => {
+  const updatePurchaseOrder = useCallback((id: string, purchaseOrder: Omit<PurchaseOrder, "id">) => {
     setData(prev => ({
       ...prev,
-      purchaseOrders: prev.purchaseOrders.map(po => po.id === purchaseOrder.id ? purchaseOrder : po)
+      purchaseOrders: prev.purchaseOrders.map(po => po.id === id ? { ...purchaseOrder, id } : po)
     }));
   }, []);
   
@@ -227,7 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       purchaseOrders: prev.purchaseOrders.filter(po => po.id !== id),
       // Also update external links
       externalLinks: prev.externalLinks.map(el => 
-        el.supplierId === id ? { ...el, supplierId: undefined } : el
+        el.poId === id ? { ...el, poId: undefined } : el
       )
     }));
   }, []);
@@ -240,10 +241,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
   
-  const updateExternalLink = useCallback((externalLink: ExternalLink) => {
+  const updateExternalLink = useCallback((id: string, externalLink: Omit<ExternalLink, "id">) => {
     setData(prev => ({
       ...prev,
-      externalLinks: prev.externalLinks.map(el => el.id === externalLink.id ? externalLink : el)
+      externalLinks: prev.externalLinks.map(el => el.id === id ? { ...externalLink, id } : el)
     }));
   }, []);
   
@@ -309,8 +310,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         status: po.status,
         deadline: po.deadline,
         issued_date: po.issuedDate,
-        progress: po.progress || 0,
-        parts: po.parts
+        progress: po.progress || 0
       }));
       
       const externalLinksToSync = data.externalLinks.map(el => ({
@@ -318,6 +318,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         type: el.type,
         project_id: el.projectId,
         supplier_id: el.supplierId,
+        po_id: el.poId,
         title: el.title,
         url: el.url,
         date: el.date
@@ -405,6 +406,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           type: el.type,
           projectId: el.project_id,
           supplierId: el.supplier_id,
+          poId: el.po_id,
           title: el.title,
           url: el.url,
           date: el.date

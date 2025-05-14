@@ -14,11 +14,11 @@ export interface SyncResult {
 
 // Function to sync all data with Supabase
 export const syncAllData = async (
-  projects: Project[], 
-  clients: Client[], 
-  suppliers: Supplier[],
-  purchaseOrders: PurchaseOrder[], 
-  externalLinks: ExternalLink[]
+  projects: any[], 
+  clients: any[], 
+  suppliers: any[],
+  purchaseOrders: any[], 
+  externalLinks: any[]
 ): Promise<SyncResult> => {
   try {
     // Clear existing data (optional - comment out if you want to preserve existing data)
@@ -63,7 +63,7 @@ export const syncAllData = async (
 
     // Extract all parts from purchase orders and sync them
     const allParts = purchaseOrders.flatMap(po => 
-      po.parts.map(part => ({ ...part, po_id: po.id }))
+      po.parts ? po.parts.map((part: any) => ({ ...part, po_id: po.id })) : []
     );
     const partsResult = await syncParts(allParts);
     if (!partsResult.success) {
@@ -87,12 +87,12 @@ export const syncAllData = async (
       success: true,
       message: "All data synchronized successfully",
       insertedCount: 
-        clientsResult.insertedCount! + 
-        projectsResult.insertedCount! + 
-        suppliersResult.insertedCount! + 
-        purchaseOrdersResult.insertedCount! + 
-        partsResult.insertedCount! + 
-        externalLinksResult.insertedCount!
+        (clientsResult.insertedCount || 0) + 
+        (projectsResult.insertedCount || 0) + 
+        (suppliersResult.insertedCount || 0) + 
+        (purchaseOrdersResult.insertedCount || 0) + 
+        (partsResult.insertedCount || 0) + 
+        (externalLinksResult.insertedCount || 0)
     };
 
   } catch (error) {
@@ -120,14 +120,14 @@ const clearTables = async (): Promise<void> => {
 };
 
 // Sync clients data
-export const syncClients = async (clients: Client[]): Promise<SyncResult> => {
+export const syncClients = async (clients: any[]): Promise<SyncResult> => {
   try {
-    const { data, error } = await supabase
+    // Use upsert instead of insert to handle both inserts and updates
+    const { error } = await supabase
       .from('clients')
       .upsert(clients, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;
@@ -148,14 +148,13 @@ export const syncClients = async (clients: Client[]): Promise<SyncResult> => {
 };
 
 // Sync projects data
-export const syncProjects = async (projects: Project[]): Promise<SyncResult> => {
+export const syncProjects = async (projects: any[]): Promise<SyncResult> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('projects')
       .upsert(projects, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;
@@ -176,14 +175,13 @@ export const syncProjects = async (projects: Project[]): Promise<SyncResult> => 
 };
 
 // Sync suppliers data
-export const syncSuppliers = async (suppliers: Supplier[]): Promise<SyncResult> => {
+export const syncSuppliers = async (suppliers: any[]): Promise<SyncResult> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('suppliers')
       .upsert(suppliers, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;
@@ -204,17 +202,16 @@ export const syncSuppliers = async (suppliers: Supplier[]): Promise<SyncResult> 
 };
 
 // Sync purchase orders data
-export const syncPurchaseOrders = async (purchaseOrders: PurchaseOrder[]): Promise<SyncResult> => {
+export const syncPurchaseOrders = async (purchaseOrders: any[]): Promise<SyncResult> => {
   try {
-    // Remove parts array before sending to Supabase
+    // Create a new array without 'parts' property for PO syncing
     const poToSync = purchaseOrders.map(({ parts, ...po }) => po);
     
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('purchase_orders')
       .upsert(poToSync, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;
@@ -237,12 +234,19 @@ export const syncPurchaseOrders = async (purchaseOrders: PurchaseOrder[]): Promi
 // Sync parts data
 export const syncParts = async (parts: any[]): Promise<SyncResult> => {
   try {
-    const { data, error } = await supabase
+    if (parts.length === 0) {
+      return {
+        success: true,
+        message: "No parts to synchronize",
+        insertedCount: 0
+      };
+    }
+    
+    const { error } = await supabase
       .from('parts')
       .upsert(parts, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;
@@ -263,14 +267,13 @@ export const syncParts = async (parts: any[]): Promise<SyncResult> => {
 };
 
 // Sync external links data
-export const syncExternalLinks = async (externalLinks: ExternalLink[]): Promise<SyncResult> => {
+export const syncExternalLinks = async (externalLinks: any[]): Promise<SyncResult> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('external_links')
       .upsert(externalLinks, { 
         onConflict: 'id',
-        ignoreDuplicates: false,
-        returning: 'minimal'
+        ignoreDuplicates: false
       });
 
     if (error) throw error;

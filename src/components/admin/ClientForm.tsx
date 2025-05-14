@@ -32,10 +32,10 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
       if (client) {
         setFormData({
           name: client.name,
-          contactPerson: client.contactPerson,
-          email: client.email,
-          phone: client.phone,
-          location: client.location,
+          contactPerson: client.contactPerson || "",
+          email: client.email || "",
+          phone: client.phone || "",
+          location: client.location || "",
         });
       }
     }

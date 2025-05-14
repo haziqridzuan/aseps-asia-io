@@ -52,7 +52,7 @@ export function ProjectForm({ projectId, onSuccess, onCancel }: ProjectFormProps
           progress: project.progress,
           startDate: project.startDate,
           endDate: project.endDate,
-          projectManager: project.projectManager,
+          projectManager: project.projectManager || "",
           description: project.description || "",
         });
       }
