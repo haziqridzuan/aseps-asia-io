@@ -5,9 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,20 +13,12 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { StatCard } from "@/components/dashboard/StatCard";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChartBar, CalendarRange, Filter } from "lucide-react";
-import { 
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent
-} from "@/components/ui/chart";
+import { ChartBar } from "lucide-react";
+import { DateRangeFilter } from "@/components/analytics/DateRangeFilter";
+import { ProjectFilter } from "@/components/analytics/ProjectFilter";
+import { StatusPieChart } from "@/components/analytics/StatusPieChart";
+import { BudgetSpentChart } from "@/components/analytics/BudgetSpentChart";
+import { SupplierSpendingChart } from "@/components/analytics/SupplierSpendingChart";
 
 export default function Analytics() {
   const { projects, suppliers, purchaseOrders } = useData();
@@ -174,41 +163,12 @@ export default function Analytics() {
         </h1>
         
         <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex items-center gap-2">
-            <CalendarRange className="h-4 w-4" />
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="month">Last 30 Days</SelectItem>
-                  <SelectItem value="quarter">Last Quarter</SelectItem>
-                  <SelectItem value="year">Last Year</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All Projects</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name.substring(0, 20) + (project.name.length > 20 ? "..." : "")}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+          <DateRangeFilter dateRange={dateRange} setDateRange={setDateRange} />
+          <ProjectFilter 
+            selectedProject={selectedProject} 
+            setSelectedProject={setSelectedProject}
+            projects={projects}
+          />
         </div>
       </div>
       
@@ -234,66 +194,10 @@ export default function Analytics() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Project Status Distribution */}
-        <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>Project Status Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={projectStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {projectStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value} projects`, 'Count']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <StatusPieChart title="Project Status Distribution" data={projectStatusData} />
         
-        {/* Purchase Order Status Chart - NEW */}
-        <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>Purchase Order Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={poStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {poStatusData.map((entry, index) => (
-                      <Cell key={`po-cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value} POs`, 'Count']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Purchase Order Status Chart */}
+        <StatusPieChart title="Purchase Order Status" data={poStatusData} />
       </div>
       
       <div className="grid grid-cols-1 gap-6">
@@ -328,42 +232,11 @@ export default function Analytics() {
           </CardContent>
         </Card>
         
-        {/* Budget Spent Analysis - UPDATED */}
-        <Card className="card-hover">
-          <CardHeader>
-            <CardTitle>Budget Spent Analysis by Project</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={spentByProject}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 60,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, '']} />
-                  <Legend />
-                  {spentByProject.map((_, index) => (
-                    <Bar 
-                      key={`spent-bar-${index}`}
-                      dataKey="spent" 
-                      name="Amount Spent" 
-                      fill={budgetColors[index % budgetColors.length]} 
-                      radius={[4, 4, 0, 0]} 
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Budget Spent Analysis - Single bar per project */}
+        <BudgetSpentChart spentByProject={spentByProject} budgetColors={budgetColors} />
+        
+        {/* New: Amount Spent by Supplier */}
+        <SupplierSpendingChart purchaseOrders={purchaseOrders} suppliers={suppliers} />
       </div>
     </div>
   );
