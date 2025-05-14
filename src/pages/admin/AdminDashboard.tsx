@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ export default function AdminDashboard() {
     generateDummyData, 
     syncWithSupabase, 
     loadFromSupabase,
-    isLoading 
+    isLoading: isDataLoading 
   } = useData();
   
   const [isSyncing, setIsSyncing] = useState(false);
@@ -82,7 +81,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing}
+            disabled={isLoading || isSyncing || isDataLoading}
             onClick={handleGenerateDummyData}
           >
             Generate Demo Data
@@ -90,7 +89,7 @@ export default function AdminDashboard() {
           
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing || !isConnected}
+            disabled={isLoading || isSyncing || !isConnected || isDataLoading}
             onClick={handleLoadFromSupabase}
           >
             {isLoading ? (
@@ -107,7 +106,7 @@ export default function AdminDashboard() {
           </Button>
           
           <Button 
-            disabled={isSyncing || !isConnected} 
+            disabled={isSyncing || !isConnected || isDataLoading} 
             onClick={handleSyncWithSupabase}
           >
             {isSyncing ? (
