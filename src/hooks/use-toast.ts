@@ -1,19 +1,22 @@
 
 import * as React from "react";
-import { toast as sonnerToast, type Toast as SonnerToast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 
-export type ToastProps = SonnerToast & {
+type ToastProps = {
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: {
     label: string;
     onClick: () => void;
   };
+  [key: string]: any;
 };
 
 const useToast = () => {
-  const toast = (props: ToastProps) => {
-    sonnerToast(props.title, {
+  const [toasts, setToasts] = React.useState<ToastProps[]>([]);
+
+  const toast = React.useCallback((props: ToastProps) => {
+    sonnerToast(props.title as string, {
       description: props.description,
       action: props.action
         ? {
@@ -23,9 +26,14 @@ const useToast = () => {
         : undefined,
       ...props,
     });
-  };
 
-  return { toast };
+    setToasts((currentToasts) => [
+      ...currentToasts,
+      { ...props, id: Math.random().toString() },
+    ]);
+  }, []);
+
+  return { toast, toasts, dismiss: () => setToasts([]) };
 };
 
 export { useToast, sonnerToast as toast };

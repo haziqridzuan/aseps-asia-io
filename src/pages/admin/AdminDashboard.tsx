@@ -17,7 +17,7 @@ export default function AdminDashboard() {
     generateDummyData, 
     syncWithSupabase, 
     loadFromSupabase,
-    isLoading: isDataLoading 
+    isLoading: dataIsLoading
   } = useData();
   
   const [isSyncing, setIsSyncing] = useState(false);
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing || isDataLoading}
+            disabled={isLoading || isSyncing || dataIsLoading}
             onClick={handleGenerateDummyData}
           >
             Generate Demo Data
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
           
           <Button 
             variant="outline"
-            disabled={isLoading || isSyncing || !isConnected || isDataLoading}
+            disabled={isLoading || isSyncing || !isConnected || dataIsLoading}
             onClick={handleLoadFromSupabase}
           >
             {isLoading ? (
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
           </Button>
           
           <Button 
-            disabled={isSyncing || !isConnected || isDataLoading} 
+            disabled={isSyncing || !isConnected || dataIsLoading} 
             onClick={handleSyncWithSupabase}
           >
             {isSyncing ? (

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import React from "react";
 
 // Layout
 import MainLayout from "@/components/layout/MainLayout";
@@ -39,49 +40,51 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <DataProvider>
-              <Routes>
-                {/* Main Routes */}
-                <Route path="/" element={<MainLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="projects" element={<Projects />} />
-                  <Route path="projects/:projectId" element={<ProjectDetails />} />
-                  <Route path="clients" element={<Clients />} />
-                  <Route path="suppliers" element={<Suppliers />} />
-                  <Route path="suppliers/:supplierId" element={<SupplierDetails />} />
-                  <Route path="timeline" element={<Timeline />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="external-links" element={<ExternalLinks />} />
-                </Route>
-                
-                {/* Admin Routes */}
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="projects" element={<AdminProjects />} />
-                  <Route path="clients" element={<AdminClients />} />
-                  <Route path="suppliers" element={<AdminSuppliers />} />
-                  <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
-                  <Route path="external-links" element={<AdminExternalLinks />} />
-                  <Route path="settings" element={<AdminSettings />} />
-                </Route>
-                
-                {/* Not Found Route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <Toaster />
-              <Sonner />
-            </DataProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
+              <DataProvider>
+                <Routes>
+                  {/* Main Routes */}
+                  <Route path="/" element={<MainLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="projects" element={<Projects />} />
+                    <Route path="projects/:projectId" element={<ProjectDetails />} />
+                    <Route path="clients" element={<Clients />} />
+                    <Route path="suppliers" element={<Suppliers />} />
+                    <Route path="suppliers/:supplierId" element={<SupplierDetails />} />
+                    <Route path="timeline" element={<Timeline />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="external-links" element={<ExternalLinks />} />
+                  </Route>
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="projects" element={<AdminProjects />} />
+                    <Route path="clients" element={<AdminClients />} />
+                    <Route path="suppliers" element={<AdminSuppliers />} />
+                    <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
+                    <Route path="external-links" element={<AdminExternalLinks />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                  </Route>
+                  
+                  {/* Not Found Route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+                <Sonner />
+              </DataProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;

@@ -3,25 +3,21 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function MainLayout() {
-  const { toast } = useToast();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // Simulate data loading
     setTimeout(() => {
       setIsLoaded(true);
-      toast({
-        title: "Welcome to ASEPS Asia",
-        description: "Your manufacturing progress tracker",
+      toast("Welcome to ASEPS Asia", {
+        description: "Your manufacturing progress tracker"
       });
     }, 500);
-  }, [toast]);
+  }, []);
 
   return (
     <>
@@ -44,8 +40,6 @@ export default function MainLayout() {
           </div>
         </div>
       </SidebarProvider>
-      <Toaster />
-      <Sonner />
     </>
   );
 }
