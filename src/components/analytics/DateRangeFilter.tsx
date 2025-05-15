@@ -8,17 +8,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { addDays, format, parseISO, startOfMonth, startOfYear, subMonths } from "date-fns";
 
-interface DateRangeFilterProps {
-  dateRange: string;
-  setDateRange: (value: string) => void;
+export interface DateRangeFilterProps {
+  dateRange?: string;
+  setDateRange?: (value: string) => void;
+  onRangeChange?: (start: Date | undefined, end: Date | undefined) => void;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
 }
 
-export function DateRangeFilter({ dateRange, setDateRange }: DateRangeFilterProps) {
+export function DateRangeFilter({ 
+  dateRange, 
+  setDateRange, 
+  onRangeChange,
+  startDate,
+  endDate 
+}: DateRangeFilterProps) {
+  const handleChange = (value: string) => {
+    if (setDateRange) {
+      setDateRange(value);
+    }
+    
+    // Calculate date range based on selection
+    if (onRangeChange) {
+      const today = new Date();
+      let start: Date | undefined;
+      let end: Date | undefined = today;
+      
+      switch (value) {
+        case "month":
+          start = subMonths(today, 1);
+          break;
+        case "quarter":
+          start = subMonths(today, 3);
+          break;
+        case "year":
+          start = subMonths(today, 12);
+          break;
+        case "all":
+        default:
+          start = undefined;
+          end = undefined;
+          break;
+      }
+      
+      onRangeChange(start, end);
+    }
+  };
+  
   return (
     <div className="flex items-center gap-2">
       <CalendarRange className="h-4 w-4" />
-      <Select value={dateRange} onValueChange={setDateRange}>
+      <Select 
+        value={dateRange || "all"} 
+        onValueChange={handleChange}
+      >
         <SelectTrigger className="w-[150px]">
           <SelectValue placeholder="Date Range" />
         </SelectTrigger>

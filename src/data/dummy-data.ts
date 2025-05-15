@@ -1,17 +1,25 @@
-
 import { v4 as uuidv4 } from 'uuid';
+import type {
+  Project,
+  Client,
+  Supplier,
+  PurchaseOrder,
+  ExternalLink,
+  Shipment
+} from "@/contexts/DataContext";
 
 // Define the data state type
 export interface DataState {
-  projects: any[];
-  clients: any[];
-  suppliers: any[];
-  purchaseOrders: any[];
-  externalLinks: any[];
+  projects: Project[];
+  clients: Client[];
+  suppliers: Supplier[];
+  purchaseOrders: PurchaseOrder[];
+  externalLinks: ExternalLink[];
+  shipments: Shipment[];
 }
 
 // Function to create dummy data
-export function createDummyData(): DataState {
+export const createDummyData = (): DataState => {
   const clients = [
     {
       id: uuidv4(),
@@ -271,11 +279,15 @@ export function createDummyData(): DataState {
     }
   ];
 
+  // Create shipments
+  const shipments: Shipment[] = [];
+
   return {
     projects,
     clients,
     suppliers,
     purchaseOrders,
-    externalLinks
+    externalLinks,
+    shipments
   };
-}
+};

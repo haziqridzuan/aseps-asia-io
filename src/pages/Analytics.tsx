@@ -149,6 +149,42 @@ export default function Analytics() {
     "#F97316", "#0EA5E9", "#D946EF", "#33C3F0"
   ];
   
+  // Calculate spent by supplier from POs
+  const spentBySupplier = useMemo(() => {
+    const supplierSpentMap = new Map<string, number>();
+    
+    // Initialize with all suppliers (even if they have no POs)
+    suppliers.forEach(supplier => {
+      supplierSpentMap.set(supplier.id, 0);
+    });
+    
+    // Calculate spent for each supplier based on POs
+    filteredPOs.forEach(po => {
+      // Sum up all parts in the PO
+      const poTotal = po.parts.reduce((sum, part) => {
+        return sum + (part.quantity * (po.amount ? po.amount / po.parts.length : 0));
+      }, 0);
+      
+      // Add to the supplier's total
+      const currentSpent = supplierSpentMap.get(po.supplierId) || 0;
+      supplierSpentMap.set(po.supplierId, currentSpent + poTotal);
+    });
+    
+    // Convert to chart data format
+    return Array.from(supplierSpentMap.entries())
+      .filter(([_, spent]) => spent > 0) // Only include suppliers with spent > 0
+      .map(([supplierId, spent]) => {
+        const supplier = suppliers.find(s => s.id === supplierId);
+        return {
+          name: supplier ? supplier.name.substring(0, 15) + (supplier.name.length > 15 ? "..." : "") : "Unknown",
+          supplierId,
+          spent,
+        };
+      })
+      .sort((a, b) => b.spent - a.spent) // Sort by spent in descending order
+      .slice(0, 8); // Show top 8 suppliers
+  }, [filteredPOs, suppliers]);
+  
   // Calculate completion rate
   const completionRate = filteredProjects.length > 0 
     ? Math.round((filteredProjects.filter(p => p.status === "Completed").length / filteredProjects.length) * 100)
@@ -235,8 +271,8 @@ export default function Analytics() {
         {/* Budget Spent Analysis - Single bar per project */}
         <BudgetSpentChart spentByProject={spentByProject} budgetColors={budgetColors} />
         
-        {/* New: Amount Spent by Supplier */}
-        <SupplierSpendingChart purchaseOrders={purchaseOrders} suppliers={suppliers} />
+        {/* Amount Spent by Supplier */}
+        <SupplierSpendingChart spentBySupplier={spentBySupplier} budgetColors={budgetColors} />
       </div>
     </div>
   );
