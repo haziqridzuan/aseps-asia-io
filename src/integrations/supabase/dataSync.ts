@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink, Shipment } from "@/contexts/DataContext";
 

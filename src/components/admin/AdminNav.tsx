@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ChartBar, File, Users, Package, Calendar, Database, Settings } from "lucide-react";
+import { ChartBar, File, Users, Package, Calendar, Database, Settings, Truck } from "lucide-react";
 
 const navItems = [
   {
@@ -30,6 +30,11 @@ const navItems = [
     title: "Purchase Orders",
     href: "/admin/purchase-orders",
     icon: Calendar,
+  },
+  {
+    title: "Shipments",
+    href: "/admin/shipments",
+    icon: Truck,
   },
   {
     title: "External Links",

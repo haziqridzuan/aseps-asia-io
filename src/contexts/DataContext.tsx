@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { createDummyData, DataState } from '@/data/dummy-data';
 import { syncAllData, loadAllData } from '@/integrations/supabase/dataSync';
@@ -70,13 +69,16 @@ export interface Shipment {
   poId: string;
   partId: string;
   type: "Air Freight" | "Ocean Freight";
+  containerNumber?: string;
+  containerSize?: string;
+  containerType?: string;
+  lockNumber?: string;
   shippedDate: string;
   etdDate: string;
   etaDate: string;
-  containerSize?: string;
-  containerType?: string;
-  containerNumber?: string;
-  lockNumber?: string;
+  status?: string;
+  trackingNumber?: string;
+  notes?: string;
 }
 
 export interface ExternalLink {
@@ -122,7 +124,7 @@ interface DataContextType {
   deleteExternalLink: (id: string) => void;
 
   addShipment: (shipment: Omit<Shipment, "id">) => void;
-  updateShipment: (id: string, shipment: Omit<Shipment, "id">) => void;
+  updateShipment: (id: string, data: Partial<Omit<Shipment, "id">>) => void;
   deleteShipment: (id: string) => void;
   
   // Utility Functions
@@ -135,7 +137,7 @@ interface DataContextType {
 }
 
 // Create Context
-const DataContext = createContext<DataContextType | undefined>(undefined);
+const DataContext = createContext<DataContextType | null>(null);
 
 // Provider Component
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -377,26 +379,166 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // CRUD Operations for Shipments
-  const addShipment = useCallback((shipment: Omit<Shipment, "id">) => {
-    setData(prev => ({
-      ...prev,
-      shipments: [...(prev.shipments || []), { ...shipment, id: uuidv4() }]
-    }));
-  }, []);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
   
-  const updateShipment = useCallback((id: string, shipment: Omit<Shipment, "id">) => {
-    setData(prev => ({
-      ...prev,
-      shipments: (prev.shipments || []).map(s => s.id === id ? { ...shipment, id } : s)
-    }));
-  }, []);
+  // Handle data loading on mount
+  useEffect(() => {
+    // If Supabase is connected, try to load data from there first
+    if (isSupabaseConnected) {
+      loadAllData().then((result) => {
+        if (result.success) {
+          // Transform data to match our app's schema
+          const transformedProjects = result.projects.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            clientId: p.client_id || "",
+            location: p.location || "",
+            status: p.status || "Pending",
+            progress: p.progress || 0,
+            startDate: p.start_date,
+            endDate: p.end_date,
+            projectManager: p.project_manager,
+            description: p.description
+          }));
+          
+          const transformedClients = result.clients.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            contactPerson: c.contact_person,
+            email: c.email,
+            phone: c.phone,
+            location: c.location
+          }));
+          
+          const transformedSuppliers = result.suppliers.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            country: s.country,
+            contactPerson: s.contact_person,
+            email: s.email,
+            phone: s.phone,
+            rating: s.rating,
+            onTimeDelivery: s.on_time_delivery,
+            location: s.location,
+            positiveComments: s.positive_comments || [],
+            negativeComments: s.negative_comments || []
+          }));
+          
+          const transformedPurchaseOrders = result.purchaseOrders.map((po: any) => ({
+            id: po.id,
+            poNumber: po.po_number,
+            projectId: po.project_id,
+            supplierId: po.supplier_id,
+            status: po.status,
+            deadline: po.deadline,
+            issuedDate: po.issued_date,
+            progress: po.progress || 0,
+            amount: po.amount || 0,
+            parts: po.parts ? po.parts.map((part: any) => ({
+              id: part.id,
+              name: part.name,
+              quantity: part.quantity,
+              status: part.status || "Pending",
+              progress: part.progress || 0
+            })) : []
+          }));
+          
+          const transformedExternalLinks = result.externalLinks.map((el: any) => ({
+            id: el.id,
+            type: el.type,
+            projectId: el.project_id,
+            supplierId: el.supplier_id,
+            poId: el.po_id,
+            title: el.title,
+            url: el.url,
+            date: el.date
+          }));
+
+          const transformedShipments = result.shipments ? result.shipments.map((s: any) => ({
+            id: s.id,
+            projectId: s.project_id,
+            supplierId: s.supplier_id,
+            poId: s.po_id,
+            partId: s.part_id,
+            type: s.type,
+            shippedDate: s.shipped_date,
+            etdDate: s.etd_date,
+            etaDate: s.eta_date,
+            containerSize: s.container_size,
+            containerType: s.container_type,
+            containerNumber: s.container_number,
+            lockNumber: s.lock_number
+          })) : [];
+          
+          // Update local state with data from Supabase
+          setData({
+            projects: transformedProjects,
+            clients: transformedClients,
+            suppliers: transformedSuppliers,
+            purchaseOrders: transformedPurchaseOrders,
+            externalLinks: transformedExternalLinks,
+            shipments: transformedShipments || []
+          });
+          
+          // Set shipments
+          setShipments(result.shipments || []);
+        }
+      });
+    } else {
+      // Initialize empty shipments array
+      setShipments([]);
+    }
+  }, [isSupabaseConnected]);
+  
+  const addShipment = useCallback((shipmentData: Omit<Shipment, "id">) => {
+    const id = uuidv4();
+    const newShipment = { ...shipmentData, id };
+    
+    setShipments(prev => [...prev, newShipment]);
+    
+    if (isSupabaseConnected) {
+      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, [...shipments, newShipment])
+        .then(result => {
+          if (!result.success) {
+            console.error("Failed to sync shipment data:", result.error);
+          }
+        });
+    }
+  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
+  
+  const updateShipment = useCallback((id: string, data: Partial<Omit<Shipment, "id">>) => {
+    setShipments(prev => prev.map(shipment => 
+      shipment.id === id ? { ...shipment, ...data } : shipment
+    ));
+    
+    if (isSupabaseConnected) {
+      const updatedShipments = shipments.map(shipment => 
+        shipment.id === id ? { ...shipment, ...data } : shipment
+      );
+      
+      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, updatedShipments)
+        .then(result => {
+          if (!result.success) {
+            console.error("Failed to sync updated shipment data:", result.error);
+          }
+        });
+    }
+  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
   
   const deleteShipment = useCallback((id: string) => {
-    setData(prev => ({
-      ...prev,
-      shipments: (prev.shipments || []).filter(s => s.id !== id)
-    }));
-  }, []);
+    setShipments(prev => prev.filter(shipment => shipment.id !== id));
+    
+    if (isSupabaseConnected) {
+      const remainingShipments = shipments.filter(shipment => shipment.id !== id);
+      
+      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, remainingShipments)
+        .then(result => {
+          if (!result.success) {
+            console.error("Failed to sync after shipment deletion:", result.error);
+          }
+        });
+    }
+  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
   
   // Generate Dummy Data
   const generateDummyData = useCallback(() => {
@@ -643,7 +785,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     suppliers: data.suppliers,
     purchaseOrders: data.purchaseOrders,
     externalLinks: data.externalLinks,
-    shipments: data.shipments || [],
+    shipments,
     isLoading,
     
     // CRUD Operations
