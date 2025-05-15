@@ -15,3 +15,4 @@ name = "parts"
 
 [[db.tables]]
 name = "shipments"
+

@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -272,7 +271,10 @@ export default function Analytics() {
         <BudgetSpentChart spentByProject={spentByProject} budgetColors={budgetColors} />
         
         {/* Amount Spent by Supplier */}
-        <SupplierSpendingChart spentBySupplier={spentBySupplier} budgetColors={budgetColors} />
+        <SupplierSpendingChart 
+          spentBySupplier={spentBySupplier} 
+          budgetColors={budgetColors} 
+        />
       </div>
     </div>
   );

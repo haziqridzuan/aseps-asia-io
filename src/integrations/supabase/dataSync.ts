@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink, Shipment } from "@/contexts/DataContext";
 
@@ -333,28 +334,37 @@ export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
       };
     }
     
-    // Try to upsert shipments
+    // Check if shipments table exists before attempting to sync
+    let tableExists = false;
     try {
-      const { error } = await supabase
+      // This is a safe way to check if the table exists without throwing errors
+      const { data, error } = await supabase
         .from('shipments')
-        .upsert(shipments, { 
-          onConflict: 'id',
-          ignoreDuplicates: false
-        });
-
-      if (error) throw error;
-    } catch (error: any) {
-      // If shipments table doesn't exist yet, just log and return success
-      if (error.message && error.message.includes('does not exist')) {
-        console.warn("Shipments table doesn't exist yet. Skipping shipment sync.");
-        return {
-          success: true,
-          message: "Shipments table doesn't exist yet. Skipping shipment sync.",
-          insertedCount: 0
-        };
-      }
-      throw error;
+        .select('count')
+        .limit(1);
+      
+      tableExists = !error;
+    } catch (e) {
+      console.warn("Checking shipments table existence:", e);
     }
+    
+    if (!tableExists) {
+      console.warn("Shipments table doesn't exist yet. Skipping shipment sync.");
+      return {
+        success: true,
+        message: "Shipments table doesn't exist yet. Skipping shipment sync.",
+        insertedCount: 0
+      };
+    }
+    
+    const { error } = await supabase
+      .from('shipments')
+      .upsert(shipments, { 
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+
+    if (error) throw error;
 
     return {
       success: true,
@@ -419,13 +429,28 @@ export const loadAllData = async () => {
     // Load shipments
     let shipments = [];
     try {
-      const { data: shipmentsData, error: shipmentsError } = await supabase
-        .from('shipments')
-        .select('*');
+      // Check if shipments table exists before attempting to load
+      let tableExists = false;
+      try {
+        // This is a safe way to check if the table exists without throwing errors
+        const { data, error } = await supabase
+          .from('shipments')
+          .select('count')
+          .limit(1);
+        
+        tableExists = !error;
+      } catch (e) {
+        console.warn("Checking shipments table existence:", e);
+      }
       
-      // It's okay if shipments table doesn't exist yet
-      if (!shipmentsError) {
-        shipments = shipmentsData || [];
+      if (tableExists) {
+        const { data: shipmentsData, error: shipmentsError } = await supabase
+          .from('shipments')
+          .select('*');
+        
+        if (!shipmentsError) {
+          shipments = shipmentsData || [];
+        }
       }
     } catch (error) {
       console.warn("Could not load shipments, table might not exist yet:", error);

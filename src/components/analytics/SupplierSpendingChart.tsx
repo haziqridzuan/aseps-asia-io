@@ -29,16 +29,20 @@ export function SupplierSpendingChart({ spentBySupplier, budgetColors }: Supplie
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
   // Filter data based on selected date range
-  const filteredData = spentBySupplier.filter(item => {
-    // If no date range is selected, show all data
-    if (!startDate || !endDate) {
-      return true;
-    }
+  const filteredData = useMemo(() => {
+    if (!spentBySupplier) return [];
     
-    // For demonstration purposes - since we don't have date in supplier data,
-    // this would need to be implemented with actual dates from purchase orders
-    return true;
-  });
+    return spentBySupplier.filter(item => {
+      // If no date range is selected, show all data
+      if (!startDate || !endDate) {
+        return true;
+      }
+      
+      // For demonstration purposes - since we don't have date in supplier data,
+      // this would need to be implemented with actual dates from purchase orders
+      return true;
+    });
+  }, [spentBySupplier, startDate, endDate]);
   
   const handleDateRangeChange = (start: Date | undefined, end: Date | undefined) => {
     setStartDate(start);
@@ -50,7 +54,7 @@ export function SupplierSpendingChart({ spentBySupplier, budgetColors }: Supplie
       <CardHeader>
         <CardTitle>Amount Spent by Supplier</CardTitle>
         <DateRangeFilter 
-          onRangeChange={handleDateRangeChange} 
+          onDateRangeChange={handleDateRangeChange} 
           startDate={startDate}
           endDate={endDate}
         />
@@ -75,7 +79,7 @@ export function SupplierSpendingChart({ spentBySupplier, budgetColors }: Supplie
               <Bar 
                 dataKey="spent" 
                 name="Amount Spent" 
-                fill={budgetColors[1]}
+                fill={budgetColors && budgetColors.length > 1 ? budgetColors[1] : "#8884d8"}
                 radius={[4, 4, 0, 0]} 
               />
             </BarChart>
