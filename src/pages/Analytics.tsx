@@ -198,7 +198,28 @@ export default function Analytics() {
         </h1>
         
         <div className="flex flex-wrap gap-2 items-center">
-          <DateRangeFilter dateRange={dateRange} setDateRange={setDateRange} />
+          {/* Update the DateRangeFilter to use onDateRangeChange prop instead of dateRange/setDateRange */}
+          <DateRangeFilter 
+            onDateRangeChange={(start, end) => {
+              // Map the date range to the existing state format
+              if (!start && !end) {
+                setDateRange("all");
+              } else if (start && !end) {
+                // If only start date is set, assume it's a recent range (month)
+                setDateRange("month");
+              } else {
+                // Both dates set, determine range based on difference
+                const diffDays = end ? Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                if (diffDays <= 30) {
+                  setDateRange("month");
+                } else if (diffDays <= 90) {
+                  setDateRange("quarter");
+                } else {
+                  setDateRange("year");
+                }
+              }
+            }} 
+          />
           <ProjectFilter 
             selectedProject={selectedProject} 
             setSelectedProject={setSelectedProject}

@@ -13,7 +13,6 @@ import {
 import { useState, useMemo } from "react";
 import { DateRangeFilter } from "./DateRangeFilter";
 import { format, isWithinInterval, parseISO } from "date-fns";
-import { PurchaseOrder, Supplier } from "@/contexts/DataContext";
 
 interface SupplierSpendingChartProps {
   spentBySupplier: Array<{

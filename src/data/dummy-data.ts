@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import type {
   Project,
@@ -139,7 +138,7 @@ export const createDummyData = (): DataState => {
       projectManager: "Mark Wilson",
       description: "Hardware component redesign"
     }
-  ];
+  ] as Project[];
 
   const purchaseOrders = [
     {
@@ -232,7 +231,7 @@ export const createDummyData = (): DataState => {
         }
       ]
     }
-  ];
+  ] as PurchaseOrder[];
 
   const externalLinks = [
     {
@@ -278,7 +277,7 @@ export const createDummyData = (): DataState => {
       url: "https://example.com/photos/components-567",
       date: "2023-01-15"
     }
-  ];
+  ] as ExternalLink[];
 
   // Create shipments
   const shipments: Shipment[] = [];

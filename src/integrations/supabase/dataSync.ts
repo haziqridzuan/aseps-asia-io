@@ -128,7 +128,8 @@ const clearTables = async (): Promise<void> => {
   try {
     // Try to clear shipments table, but don't error if it doesn't exist yet
     try {
-      await supabase.from('shipments').delete().gt('id', '');
+      // Use type assertion to avoid TypeScript errors
+      await (supabase as any).from('shipments').delete().gt('id', '');
     } catch (error) {
       console.warn("Could not clear shipments table, it might not exist yet:", error);
     }
@@ -338,7 +339,7 @@ export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
     let tableExists = false;
     try {
       // This is a safe way to check if the table exists without throwing errors
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('shipments')
         .select('count')
         .limit(1);
@@ -357,7 +358,7 @@ export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
       };
     }
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('shipments')
       .upsert(shipments, { 
         onConflict: 'id',
@@ -433,7 +434,7 @@ export const loadAllData = async () => {
       let tableExists = false;
       try {
         // This is a safe way to check if the table exists without throwing errors
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('shipments')
           .select('count')
           .limit(1);
@@ -444,7 +445,7 @@ export const loadAllData = async () => {
       }
       
       if (tableExists) {
-        const { data: shipmentsData, error: shipmentsError } = await supabase
+        const { data: shipmentsData, error: shipmentsError } = await (supabase as any)
           .from('shipments')
           .select('*');
         
