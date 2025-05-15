@@ -25,8 +25,8 @@ export function Toaster() {
               )}
             </div>
             {action && (
-              <ToastAction altText={action.label} onClick={action.onClick}>
-                {action.label}
+              <ToastAction altText={action.altText} onClick={action.onClick}>
+                {action.altText}
               </ToastAction>
             )}
             <ToastClose />
