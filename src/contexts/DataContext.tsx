@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { createDummyData, DataState } from '@/data/dummy-data';
@@ -60,6 +61,7 @@ export interface PurchaseOrder {
   parts: Part[];
   progress?: number;
   amount?: number;
+  description?: string; // Added description field
 }
 
 export interface Shipment {
@@ -149,6 +151,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
+
+  // Add shipments state
+  const [shipments, setShipments] = useState<Shipment[]>([]);
   
   // Save data to localStorage whenever it changes
   React.useEffect(() => {
@@ -379,8 +385,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // CRUD Operations for Shipments
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  
   // Handle data loading on mount
   useEffect(() => {
     // If Supabase is connected, try to load data from there first
@@ -434,6 +438,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             issuedDate: po.issued_date,
             progress: po.progress || 0,
             amount: po.amount || 0,
+            description: po.description || "", // Add description
             parts: po.parts ? po.parts.map((part: any) => ({
               id: part.id,
               name: part.name,
@@ -497,33 +502,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setShipments(prev => [...prev, newShipment]);
     
     if (isSupabaseConnected) {
-      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, [...shipments, newShipment])
+      syncAllData(data.projects, data.clients, data.suppliers, data.purchaseOrders, data.externalLinks, [...shipments, newShipment])
         .then(result => {
           if (!result.success) {
             console.error("Failed to sync shipment data:", result.error);
           }
         });
     }
-  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
+  }, [shipments, data, isSupabaseConnected]);
   
-  const updateShipment = useCallback((id: string, data: Partial<Omit<Shipment, "id">>) => {
+  const updateShipment = useCallback((id: string, shipmentData: Partial<Omit<Shipment, "id">>) => {
     setShipments(prev => prev.map(shipment => 
-      shipment.id === id ? { ...shipment, ...data } : shipment
+      shipment.id === id ? { ...shipment, ...shipmentData } : shipment
     ));
     
     if (isSupabaseConnected) {
       const updatedShipments = shipments.map(shipment => 
-        shipment.id === id ? { ...shipment, ...data } : shipment
+        shipment.id === id ? { ...shipment, ...shipmentData } : shipment
       );
       
-      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, updatedShipments)
+      syncAllData(data.projects, data.clients, data.suppliers, data.purchaseOrders, data.externalLinks, updatedShipments)
         .then(result => {
           if (!result.success) {
             console.error("Failed to sync updated shipment data:", result.error);
           }
         });
     }
-  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
+  }, [shipments, data, isSupabaseConnected]);
   
   const deleteShipment = useCallback((id: string) => {
     setShipments(prev => prev.filter(shipment => shipment.id !== id));
@@ -531,14 +536,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (isSupabaseConnected) {
       const remainingShipments = shipments.filter(shipment => shipment.id !== id);
       
-      syncAllData(projects, clients, suppliers, purchaseOrders, externalLinks, remainingShipments)
+      syncAllData(data.projects, data.clients, data.suppliers, data.purchaseOrders, data.externalLinks, remainingShipments)
         .then(result => {
           if (!result.success) {
             console.error("Failed to sync after shipment deletion:", result.error);
           }
         });
     }
-  }, [shipments, projects, clients, suppliers, purchaseOrders, externalLinks, isSupabaseConnected]);
+  }, [shipments, data, isSupabaseConnected]);
   
   // Generate Dummy Data
   const generateDummyData = useCallback(() => {
@@ -596,7 +601,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deadline: po.deadline,
         issued_date: po.issuedDate,
         progress: po.progress || 0,
-        amount: po.amount || 0
+        amount: po.amount || 0,
+        description: po.description || "" // Add description field
       }));
       
       const externalLinksToSync = data.externalLinks.map(el => ({
@@ -634,6 +640,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         externalLinksToSync,
         shipmentsToSync
       );
+      
+      setIsSupabaseConnected(true);
       
     } catch (error) {
       console.error("Error syncing with Supabase:", error);
@@ -697,6 +705,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           issuedDate: po.issued_date,
           progress: po.progress || 0,
           amount: po.amount || 0,
+          description: po.description || "", // Add description field
           parts: po.parts ? po.parts.map((part: any) => ({
             id: part.id,
             name: part.name,
@@ -743,6 +752,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           shipments: transformedShipments || []
         });
         
+        setIsSupabaseConnected(true);
         return { success: true };
       }
       
@@ -830,7 +840,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 // Custom Hook to use the context
 export const useData = (): DataContextType => {
   const context = useContext(DataContext);
-  if (context === undefined) {
+  if (context === null) {
     throw new Error("useData must be used within a DataProvider");
   }
   return context;

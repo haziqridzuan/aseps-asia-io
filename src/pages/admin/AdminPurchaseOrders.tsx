@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil, Trash } from "lucide-react";
 import { format } from "date-fns";
 import PurchaseOrderForm from "@/components/admin/PurchaseOrderForm";

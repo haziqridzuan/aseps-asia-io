@@ -40,15 +40,25 @@ export default function ProjectDetails() {
   // Get POs related to this project
   const projectPOs = purchaseOrders.filter(po => po.projectId === project.id);
   
-  // Count unique PO numbers
+  // Count unique PO numbers for summary
   const uniquePoNumbers = new Set(projectPOs.map(po => po.poNumber));
   const totalPOs = uniquePoNumbers.size;
   
   // Count active and completed POs by unique PO number
   const poStatusByPoNumber = new Map();
   projectPOs.forEach(po => {
+    // Only set if the PO number doesn't exist already or if the current status is prioritized
+    // Priority: Active > Delayed > Completed
     if (!poStatusByPoNumber.has(po.poNumber)) {
       poStatusByPoNumber.set(po.poNumber, po.status);
+    } else {
+      const currentStatus = poStatusByPoNumber.get(po.poNumber);
+      if (
+        currentStatus === "Completed" || 
+        (currentStatus === "Delayed" && po.status === "Active")
+      ) {
+        poStatusByPoNumber.set(po.poNumber, po.status);
+      }
     }
   });
   
