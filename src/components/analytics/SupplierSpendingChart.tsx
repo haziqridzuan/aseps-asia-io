@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import { useState, useMemo } from "react";
 import { DateRangeFilter } from "./DateRangeFilter";
-import { format, isWithinInterval, parseISO } from "date-fns";
 
 interface SupplierSpendingChartProps {
   spentBySupplier: Array<{
@@ -23,13 +22,13 @@ interface SupplierSpendingChartProps {
   budgetColors: string[];
 }
 
-export function SupplierSpendingChart({ spentBySupplier, budgetColors }: SupplierSpendingChartProps) {
+export function SupplierSpendingChart({ spentBySupplier = [], budgetColors }: SupplierSpendingChartProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
   // Filter data based on selected date range
   const filteredData = useMemo(() => {
-    if (!spentBySupplier) return [];
+    if (!spentBySupplier || spentBySupplier.length === 0) return [];
     
     return spentBySupplier.filter(item => {
       // If no date range is selected, show all data
