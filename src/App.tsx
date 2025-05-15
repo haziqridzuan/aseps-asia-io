@@ -31,6 +31,7 @@ import AdminProjects from "@/pages/admin/AdminProjects";
 import AdminClients from "@/pages/admin/AdminClients";
 import AdminSuppliers from "@/pages/admin/AdminSuppliers";
 import AdminPurchaseOrders from "@/pages/admin/AdminPurchaseOrders";
+import AdminShipments from "@/pages/admin/AdminShipments";
 import AdminExternalLinks from "@/pages/admin/AdminExternalLinks";
 import AdminSettings from "@/pages/admin/AdminSettings";
 
@@ -69,6 +70,7 @@ const App = () => (
                     <Route path="clients" element={<AdminClients />} />
                     <Route path="suppliers" element={<AdminSuppliers />} />
                     <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
+                    <Route path="shipments" element={<AdminShipments />} />
                     <Route path="external-links" element={<AdminExternalLinks />} />
                     <Route path="settings" element={<AdminSettings />} />
                   </Route>

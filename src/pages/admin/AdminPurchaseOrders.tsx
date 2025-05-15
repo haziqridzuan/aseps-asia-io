@@ -32,7 +32,23 @@ export default function AdminPurchaseOrders() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | undefined>(undefined);
   
-  const filteredPOs = purchaseOrders.filter(po => {
+  // Group POs by PO number
+  const groupedPOs = purchaseOrders.reduce<Record<string, { po: PurchaseOrder, count: number }>>(
+    (acc, po) => {
+      if (!acc[po.poNumber]) {
+        acc[po.poNumber] = { po, count: 1 };
+      } else {
+        acc[po.poNumber].count++;
+      }
+      return acc;
+    },
+    {}
+  );
+  
+  // Convert back to array for display, with counts
+  const uniquePOs = Object.values(groupedPOs).map(({ po, count }) => ({ ...po, count }));
+  
+  const filteredPOs = uniquePOs.filter(po => {
     const matchesSearch = 
       search === "" ||
       po.poNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,10 +141,12 @@ export default function AdminPurchaseOrders() {
             <TableHeader>
               <TableRow>
                 <TableHead>PO Number</TableHead>
+                <TableHead>Qty</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead>Project</TableHead>
                 <TableHead>Issue Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Amount ($)</TableHead>
                 <TableHead>Parts</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -138,6 +156,7 @@ export default function AdminPurchaseOrders() {
                 filteredPOs.map((po) => (
                   <TableRow key={po.id}>
                     <TableCell className="font-medium">{po.poNumber}</TableCell>
+                    <TableCell>{po.count || 1}</TableCell>
                     <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                     <TableCell>{getProjectName(po.projectId)}</TableCell>
                     <TableCell>{format(new Date(po.issuedDate), "MMM d, yyyy")}</TableCell>
@@ -153,6 +172,7 @@ export default function AdminPurchaseOrders() {
                         {po.status}
                       </span>
                     </TableCell>
+                    <TableCell>{po.amount ? `$${po.amount.toLocaleString()}` : '-'}</TableCell>
                     <TableCell>{po.parts.length}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -177,7 +197,7 @@ export default function AdminPurchaseOrders() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     No purchase orders found.
                   </TableCell>
                 </TableRow>

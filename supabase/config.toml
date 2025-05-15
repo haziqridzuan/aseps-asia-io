@@ -1,1 +1,17 @@
+
 project_id = "qvmjgcoepabfedwlvbcb"
+
+[api]
+enabled = true
+port = 54321
+swagger_ui = true
+generate_types = true
+
+[[db.tables]]
+name = "purchase_orders"
+
+[[db.tables]]
+name = "parts"
+
+[[db.tables]]
+name = "shipments"

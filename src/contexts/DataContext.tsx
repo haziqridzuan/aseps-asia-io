@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { createDummyData, DataState } from '@/data/dummy-data';
@@ -46,6 +47,7 @@ export interface Part {
   name: string;
   quantity: number;
   status: "In Progress" | "Completed" | "Pending" | "Delayed";
+  progress?: number;
 }
 
 export interface PurchaseOrder {
@@ -58,6 +60,23 @@ export interface PurchaseOrder {
   issuedDate: string;
   parts: Part[];
   progress?: number;
+  amount?: number;
+}
+
+export interface Shipment {
+  id: string;
+  projectId: string;
+  supplierId: string;
+  poId: string;
+  partId: string;
+  type: "Air Freight" | "Ocean Freight";
+  shippedDate: string;
+  etdDate: string;
+  etaDate: string;
+  containerSize?: string;
+  containerType?: string;
+  containerNumber?: string;
+  lockNumber?: string;
 }
 
 export interface ExternalLink {
@@ -78,6 +97,7 @@ interface DataContextType {
   suppliers: Supplier[];
   purchaseOrders: PurchaseOrder[];
   externalLinks: ExternalLink[];
+  shipments: Shipment[];
   isLoading: boolean;
   
   // CRUD Operations
@@ -100,6 +120,10 @@ interface DataContextType {
   addExternalLink: (externalLink: Omit<ExternalLink, "id">) => void;
   updateExternalLink: (id: string, externalLink: Omit<ExternalLink, "id">) => void;
   deleteExternalLink: (id: string) => void;
+
+  addShipment: (shipment: Omit<Shipment, "id">) => void;
+  updateShipment: (id: string, shipment: Omit<Shipment, "id">) => void;
+  deleteShipment: (id: string) => void;
   
   // Utility Functions
   generateDummyData: () => void;
@@ -151,7 +175,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Also delete related purchase orders
       purchaseOrders: prev.purchaseOrders.filter(po => po.projectId !== id),
       // Also delete related external links
-      externalLinks: prev.externalLinks.filter(el => el.projectId !== id)
+      externalLinks: prev.externalLinks.filter(el => el.projectId !== id),
+      // Also delete related shipments
+      shipments: (prev.shipments || []).filter(s => s.projectId !== id)
     }));
   }, []);
   
@@ -205,34 +231,127 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Remove supplier from external links
       externalLinks: prev.externalLinks.map(el => 
         el.supplierId === id ? { ...el, supplierId: undefined } : el
-      )
+      ),
+      // Also delete related shipments
+      shipments: (prev.shipments || []).filter(s => s.supplierId !== id)
     }));
+  }, []);
+  
+  // Helper function to update project progress based on purchase orders
+  const updateProjectProgress = useCallback((projectId: string) => {
+    setData(prev => {
+      // Find all POs for this project
+      const projectPOs = prev.purchaseOrders.filter(po => po.projectId === projectId);
+      
+      // If no POs, don't update the progress
+      if (projectPOs.length === 0) {
+        return prev;
+      }
+      
+      // Calculate average progress from all POs
+      const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
+      const averageProgress = Math.round(totalProgress / projectPOs.length);
+      
+      // Update the project progress
+      return {
+        ...prev,
+        projects: prev.projects.map(project => 
+          project.id === projectId 
+            ? { ...project, progress: averageProgress }
+            : project
+        )
+      };
+    });
   }, []);
   
   // CRUD Operations for Purchase Orders
   const addPurchaseOrder = useCallback((purchaseOrder: Omit<PurchaseOrder, "id">) => {
-    setData(prev => ({
-      ...prev,
-      purchaseOrders: [...prev.purchaseOrders, { ...purchaseOrder, id: uuidv4() }]
-    }));
+    const newId = uuidv4();
+    setData(prev => {
+      const newPO = { ...purchaseOrder, id: newId };
+      const newData = {
+        ...prev, 
+        purchaseOrders: [...prev.purchaseOrders, newPO]
+      };
+      
+      // Update project progress
+      const projectId = purchaseOrder.projectId;
+      const projectPOs = [...prev.purchaseOrders, newPO].filter(po => po.projectId === projectId);
+      const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
+      const averageProgress = Math.round(totalProgress / projectPOs.length);
+      
+      newData.projects = prev.projects.map(project => 
+        project.id === projectId 
+          ? { ...project, progress: averageProgress }
+          : project
+      );
+      
+      return newData;
+    });
   }, []);
   
   const updatePurchaseOrder = useCallback((id: string, purchaseOrder: Omit<PurchaseOrder, "id">) => {
-    setData(prev => ({
-      ...prev,
-      purchaseOrders: prev.purchaseOrders.map(po => po.id === id ? { ...purchaseOrder, id } : po)
-    }));
+    setData(prev => {
+      const updatedPOs = prev.purchaseOrders.map(po => po.id === id ? { ...purchaseOrder, id } : po);
+      const newData = {
+        ...prev,
+        purchaseOrders: updatedPOs
+      };
+      
+      // Update project progress
+      const projectId = purchaseOrder.projectId;
+      const projectPOs = updatedPOs.filter(po => po.projectId === projectId);
+      
+      if (projectPOs.length > 0) {
+        const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
+        const averageProgress = Math.round(totalProgress / projectPOs.length);
+        
+        newData.projects = prev.projects.map(project => 
+          project.id === projectId 
+            ? { ...project, progress: averageProgress }
+            : project
+        );
+      }
+      
+      return newData;
+    });
   }, []);
   
   const deletePurchaseOrder = useCallback((id: string) => {
-    setData(prev => ({
-      ...prev,
-      purchaseOrders: prev.purchaseOrders.filter(po => po.id !== id),
-      // Also update external links
-      externalLinks: prev.externalLinks.map(el => 
-        el.poId === id ? { ...el, poId: undefined } : el
-      )
-    }));
+    setData(prev => {
+      const poToDelete = prev.purchaseOrders.find(po => po.id === id);
+      const projectId = poToDelete?.projectId;
+      
+      const filteredPOs = prev.purchaseOrders.filter(po => po.id !== id);
+      const newData = {
+        ...prev,
+        purchaseOrders: filteredPOs,
+        // Also update external links
+        externalLinks: prev.externalLinks.map(el => 
+          el.poId === id ? { ...el, poId: undefined } : el
+        ),
+        // Also delete related shipments
+        shipments: (prev.shipments || []).filter(s => s.poId !== id)
+      };
+      
+      // Update project progress if a project ID was found
+      if (projectId) {
+        const projectPOs = filteredPOs.filter(po => po.projectId === projectId);
+        
+        if (projectPOs.length > 0) {
+          const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
+          const averageProgress = Math.round(totalProgress / projectPOs.length);
+          
+          newData.projects = prev.projects.map(project => 
+            project.id === projectId 
+              ? { ...project, progress: averageProgress }
+              : project
+          );
+        }
+      }
+      
+      return newData;
+    });
   }, []);
   
   // CRUD Operations for External Links
@@ -254,6 +373,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(prev => ({
       ...prev,
       externalLinks: prev.externalLinks.filter(el => el.id !== id)
+    }));
+  }, []);
+
+  // CRUD Operations for Shipments
+  const addShipment = useCallback((shipment: Omit<Shipment, "id">) => {
+    setData(prev => ({
+      ...prev,
+      shipments: [...(prev.shipments || []), { ...shipment, id: uuidv4() }]
+    }));
+  }, []);
+  
+  const updateShipment = useCallback((id: string, shipment: Omit<Shipment, "id">) => {
+    setData(prev => ({
+      ...prev,
+      shipments: (prev.shipments || []).map(s => s.id === id ? { ...shipment, id } : s)
+    }));
+  }, []);
+  
+  const deleteShipment = useCallback((id: string) => {
+    setData(prev => ({
+      ...prev,
+      shipments: (prev.shipments || []).filter(s => s.id !== id)
     }));
   }, []);
   
@@ -312,7 +453,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         status: po.status,
         deadline: po.deadline,
         issued_date: po.issuedDate,
-        progress: po.progress || 0
+        progress: po.progress || 0,
+        amount: po.amount || 0
       }));
       
       const externalLinksToSync = data.externalLinks.map(el => ({
@@ -325,13 +467,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
         url: el.url,
         date: el.date
       }));
+
+      const shipmentsToSync = (data.shipments || []).map(s => ({
+        id: s.id,
+        project_id: s.projectId,
+        supplier_id: s.supplierId,
+        po_id: s.poId,
+        part_id: s.partId,
+        type: s.type,
+        shipped_date: s.shippedDate,
+        etd_date: s.etdDate,
+        eta_date: s.etaDate,
+        container_size: s.containerSize,
+        container_type: s.containerType,
+        container_number: s.containerNumber,
+        lock_number: s.lockNumber
+      }));
       
       await syncAllData(
         projectsToSync,
         clientsToSync,
         suppliersToSync,
         purchaseOrdersToSync,
-        externalLinksToSync
+        externalLinksToSync,
+        shipmentsToSync
       );
       
     } catch (error) {
@@ -395,11 +554,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           deadline: po.deadline,
           issuedDate: po.issued_date,
           progress: po.progress || 0,
+          amount: po.amount || 0,
           parts: po.parts ? po.parts.map((part: any) => ({
             id: part.id,
             name: part.name,
             quantity: part.quantity,
-            status: part.status || "Pending"
+            status: part.status || "Pending",
+            progress: part.progress || 0
           })) : []
         }));
         
@@ -413,6 +574,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
           url: el.url,
           date: el.date
         }));
+
+        const transformedShipments = result.shipments ? result.shipments.map((s: any) => ({
+          id: s.id,
+          projectId: s.project_id,
+          supplierId: s.supplier_id,
+          poId: s.po_id,
+          partId: s.part_id,
+          type: s.type,
+          shippedDate: s.shipped_date,
+          etdDate: s.etd_date,
+          etaDate: s.eta_date,
+          containerSize: s.container_size,
+          containerType: s.container_type,
+          containerNumber: s.container_number,
+          lockNumber: s.lock_number
+        })) : [];
         
         // Update local state with data from Supabase
         setData({
@@ -420,7 +597,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           clients: transformedClients,
           suppliers: transformedSuppliers,
           purchaseOrders: transformedPurchaseOrders,
-          externalLinks: transformedExternalLinks
+          externalLinks: transformedExternalLinks,
+          shipments: transformedShipments || []
         });
         
         return { success: true };
@@ -444,7 +622,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         clients: [],
         suppliers: [],
         purchaseOrders: [],
-        externalLinks: []
+        externalLinks: [],
+        shipments: []
       };
       setData(emptyData);
       localStorage.removeItem('asepsData');
@@ -464,6 +643,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     suppliers: data.suppliers,
     purchaseOrders: data.purchaseOrders,
     externalLinks: data.externalLinks,
+    shipments: data.shipments || [],
     isLoading,
     
     // CRUD Operations
@@ -486,6 +666,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addExternalLink,
     updateExternalLink,
     deleteExternalLink,
+    
+    addShipment,
+    updateShipment,
+    deleteShipment,
     
     // Utility Functions
     generateDummyData,

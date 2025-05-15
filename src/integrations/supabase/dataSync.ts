@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink } from "@/contexts/DataContext";
+import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink, Shipment } from "@/contexts/DataContext";
 
 // Interface for sync operations
 export interface SyncResult {
@@ -18,7 +18,8 @@ export const syncAllData = async (
   clients: any[], 
   suppliers: any[],
   purchaseOrders: any[], 
-  externalLinks: any[]
+  externalLinks: any[],
+  shipments: any[] = []
 ): Promise<SyncResult> => {
   try {
     // Clear existing data (optional - comment out if you want to preserve existing data)
@@ -83,6 +84,18 @@ export const syncAllData = async (
       };
     }
 
+    // Sync shipments if available
+    if (shipments && shipments.length > 0) {
+      const shipmentsResult = await syncShipments(shipments);
+      if (!shipmentsResult.success) {
+        return { 
+          success: false, 
+          message: "Failed to sync shipments", 
+          error: shipmentsResult.error 
+        };
+      }
+    }
+
     return {
       success: true,
       message: "All data synchronized successfully",
@@ -108,6 +121,7 @@ export const syncAllData = async (
 // Clear all tables (optional - use carefully)
 const clearTables = async (): Promise<void> => {
   try {
+    await supabase.from('shipments').delete().gt('id', '');
     await supabase.from('external_links').delete().gt('id', '');
     await supabase.from('parts').delete().gt('id', '');
     await supabase.from('purchase_orders').delete().gt('id', '');
@@ -242,9 +256,14 @@ export const syncParts = async (parts: any[]): Promise<SyncResult> => {
       };
     }
     
+    const partsToSync = parts.map(part => ({
+      ...part,
+      progress: part.progress || 0
+    }));
+    
     const { error } = await supabase
       .from('parts')
-      .upsert(parts, { 
+      .upsert(partsToSync, { 
         onConflict: 'id',
         ignoreDuplicates: false
       });
@@ -288,6 +307,41 @@ export const syncExternalLinks = async (externalLinks: any[]): Promise<SyncResul
     return {
       success: false,
       message: "Failed to sync external links",
+      error
+    };
+  }
+};
+
+// Sync shipments data
+export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
+  try {
+    if (shipments.length === 0) {
+      return {
+        success: true,
+        message: "No shipments to synchronize",
+        insertedCount: 0
+      };
+    }
+    
+    const { error } = await supabase
+      .from('shipments')
+      .upsert(shipments, { 
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      message: "Shipments synchronized successfully",
+      insertedCount: shipments.length
+    };
+  } catch (error) {
+    console.error("Failed to sync shipments:", error);
+    return {
+      success: false,
+      message: "Failed to sync shipments",
       error
     };
   }
@@ -338,6 +392,17 @@ export const loadAllData = async () => {
     
     if (externalLinksError) throw externalLinksError;
 
+    // Load shipments
+    const { data: shipmentsData, error: shipmentsError } = await supabase
+      .from('shipments')
+      .select('*');
+    
+    // It's okay if shipments table doesn't exist yet
+    let shipments = [];
+    if (!shipmentsError) {
+      shipments = shipmentsData || [];
+    }
+
     // Combine parts with purchase orders
     const purchaseOrdersWithParts = purchaseOrdersData.map(po => {
       const relatedParts = partsData.filter(part => part.po_id === po.id);
@@ -353,7 +418,8 @@ export const loadAllData = async () => {
       projects: projectsData,
       suppliers: suppliersData,
       purchaseOrders: purchaseOrdersWithParts,
-      externalLinks: externalLinksData
+      externalLinks: externalLinksData,
+      shipments
     };
   } catch (error) {
     console.error("Failed to load data from Supabase:", error);
@@ -364,7 +430,8 @@ export const loadAllData = async () => {
       projects: [],
       suppliers: [],
       purchaseOrders: [],
-      externalLinks: []
+      externalLinks: [],
+      shipments: []
     };
   }
 };
