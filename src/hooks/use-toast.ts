@@ -1,5 +1,5 @@
 import { type ToastActionElement, ToastProps } from "@/components/ui/toast"
-import { toast as sonnerToast } from "sonner";
+import * as React from "react";
 
 const TOAST_LIMIT = 1
 export type ToasterToast = ToastProps & {
@@ -160,12 +160,60 @@ export function toast({ ...props }: Omit<ToasterToast, "id">) {
   }
 }
 
+// Define shorthand methods for different toast types
+toast.success = (content: string, options = {}) => {
+  return toast({
+    title: "Success",
+    description: content,
+    variant: "default",
+    ...options
+  });
+};
+
+toast.error = (content: string, options = {}) => {
+  return toast({
+    title: "Error",
+    description: content,
+    variant: "destructive",
+    ...options
+  });
+};
+
+toast.info = (content: string, options = {}) => {
+  return toast({
+    title: "Info",
+    description: content,
+    variant: "default",
+    ...options
+  });
+};
+
+toast.warning = (content: string, options = {}) => {
+  return toast({
+    title: "Warning",
+    description: content,
+    variant: "destructive",
+    ...options
+  });
+};
+
 export function useToast() {
+  const subscribe = React.useCallback((callback: (state: State) => void) => {
+    listeners.push(callback)
+    return () => {
+      const index = listeners.indexOf(callback)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [])
+
+  const getToasts = React.useCallback(() => memoryState.toasts, [])
+
   return {
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    toasts: getToasts(),
+    subscribe,
   }
 }
-
-// Export the Sonner toast
-export { sonnerToast as toast };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData, PurchaseOrder, Part } from "@/contexts/DataContext";
 import {
@@ -18,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Trash, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
