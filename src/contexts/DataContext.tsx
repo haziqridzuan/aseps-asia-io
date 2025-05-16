@@ -317,6 +317,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (partsError) throw partsError;
       
       const poWithParts = poData.map(po => {
+        // Make sure to map parts properly with the progress field
         const poParts = partsData
           .filter(part => part.po_id === po.id)
           .map(part => ({
@@ -324,7 +325,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: part.name,
             quantity: part.quantity,
             status: part.status || 'Pending',
-            progress: part.progress || 0,
+            progress: part.progress || 0, // Make sure to map progress correctly
           }));
           
         return {
@@ -487,6 +488,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (poData && partsData) {
         const poWithParts = poData.map(po => {
+          // Make sure parts have the progress field here too
           const poParts = partsData
             .filter(part => part.po_id === po.id)
             .map(part => ({
@@ -494,7 +496,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: part.name,
               quantity: part.quantity,
               status: part.status || 'Pending',
-              progress: part.progress || 0,
+              progress: part.progress || 0, // Make sure progress is mapped
             }));
             
           return {
@@ -570,7 +572,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  // Implement the missing functions
+  // Implement the functions for AdminDashboard.tsx and AdminSettings.tsx
   const generateDummyData = () => {
     const dummyData = createDummyData();
     setClients(dummyData.clients);
@@ -986,7 +988,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: part.name,
                 quantity: part.quantity,
                 status: part.status,
-                progress: part.progress || 0,
+                progress: part.progress || 0, // Make sure progress is included
                 po_id: id,
               }]);
               
@@ -999,7 +1001,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: part.name,
                 quantity: part.quantity,
                 status: part.status,
-                progress: part.progress || 0,
+                progress: part.progress || 0, // Make sure progress is included
+                po_id: id,
               })
               .eq('id', part.id);
               

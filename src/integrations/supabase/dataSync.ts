@@ -210,7 +210,7 @@ export const syncPurchaseOrdersToSupabase = async (purchaseOrders: PurchaseOrder
           name: part.name,
           quantity: part.quantity,
           status: part.status,
-          progress: part.progress || 0,
+          progress: part.progress || 0, // Make sure progress is included
           po_id: po.id,
         }));
         

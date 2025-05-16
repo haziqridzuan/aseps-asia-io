@@ -109,6 +109,7 @@ export type Database = {
           id: string
           name: string
           po_id: string | null
+          progress: number | null
           quantity: number
           status: string | null
           updated_at: string | null
@@ -118,6 +119,7 @@ export type Database = {
           id?: string
           name: string
           po_id?: string | null
+          progress?: number | null
           quantity: number
           status?: string | null
           updated_at?: string | null
@@ -127,6 +129,7 @@ export type Database = {
           id?: string
           name?: string
           po_id?: string | null
+          progress?: number | null
           quantity?: number
           status?: string | null
           updated_at?: string | null
