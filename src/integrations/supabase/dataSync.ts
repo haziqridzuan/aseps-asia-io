@@ -1,14 +1,14 @@
 
 import { supabase } from "./client";
 import { Client, ExternalLink, Project, PurchaseOrder, Supplier } from "@/contexts/DataContext";
-import * as dummyData from "@/data/dummy-data";
+import { createDummyData } from "@/data/dummy-data";
 
 // Convert camelCase to snake_case for database fields
 const camelToSnake = (str: string) => str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 
 // Load dummy data
 export const loadDummyData = () => {
-  return dummyData;
+  return createDummyData();
 };
 
 // Sync dummy data with Supabase

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadDummyData, syncDummyToSupabase, updateSupabaseProject } from "@/integrations/supabase/dataSync";
+import { createDummyData } from "@/data/dummy-data";
 
 export interface Client {
   id: string;
@@ -99,6 +100,13 @@ interface DataContextType {
   loading: boolean;
   error: any;
   
+  // Added these missing properties for AdminDashboard.tsx and AdminSettings.tsx
+  generateDummyData: () => void;
+  syncWithSupabase: () => Promise<void>;
+  loadFromSupabase: () => Promise<{ success: boolean }>;
+  isLoading: boolean;
+  clearAllData: () => Promise<void>;
+  
   addProject: (project: Omit<Project, "id">) => Promise<void>;
   updateProject: (id: string, project: Partial<Project>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
@@ -131,6 +139,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Load all data on initial render and setup real-time subscriptions
   useEffect(() => {
@@ -147,7 +156,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(err);
         
         // Fallback to dummy data if Supabase fails
-        const dummyData = loadDummyData();
+        const dummyData = createDummyData();
         setClients(dummyData.clients);
         setSuppliers(dummyData.suppliers);
         setProjects(dummyData.projects);
@@ -558,6 +567,65 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
       
       setShipments(mappedShipments);
+    }
+  };
+  
+  // Implement the missing functions
+  const generateDummyData = () => {
+    const dummyData = createDummyData();
+    setClients(dummyData.clients);
+    setSuppliers(dummyData.suppliers);
+    setProjects(dummyData.projects);
+    setPurchaseOrders(dummyData.purchaseOrders);
+    setExternalLinks(dummyData.externalLinks);
+  };
+
+  const syncWithSupabase = async () => {
+    setIsLoading(true);
+    try {
+      const data = {
+        clients,
+        suppliers,
+        projects,
+        purchaseOrders,
+        externalLinks
+      };
+      await syncDummyToSupabase(data);
+    } catch (error) {
+      console.error("Error syncing with Supabase:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadFromSupabase = async () => {
+    setIsLoading(true);
+    try {
+      await loadDataFromSupabase();
+      return { success: true };
+    } catch (error) {
+      console.error("Error loading from Supabase:", error);
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearAllData = async () => {
+    setIsLoading(true);
+    try {
+      setClients([]);
+      setSuppliers([]);
+      setProjects([]);
+      setPurchaseOrders([]);
+      setExternalLinks([]);
+      setShipments([]);
+    } catch (error) {
+      console.error("Error clearing data:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -1068,6 +1136,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     shipments,
     loading,
     error,
+    
+    // Include the newly implemented functions
+    generateDummyData,
+    syncWithSupabase,
+    loadFromSupabase,
+    isLoading,
+    clearAllData,
     
     addProject,
     updateProject,
