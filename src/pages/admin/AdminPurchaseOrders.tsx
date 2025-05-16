@@ -47,10 +47,7 @@ export default function AdminPurchaseOrders() {
   const handleDeletePO = (poId: string) => {
     if (confirm("Are you sure you want to delete this purchase order?")) {
       deletePurchaseOrder(poId);
-      toast({
-        title: "Success", 
-        description: "Purchase order deleted successfully"
-      });
+      toast.success("Purchase order deleted successfully");
     }
   };
   

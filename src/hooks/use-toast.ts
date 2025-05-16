@@ -125,6 +125,17 @@ type Toast = Omit<ToasterToast, "id">;
 function toast(props: Toast) {
   const id = genId();
 
+  const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+  
+  // Use sonner toast for actual UI
+  sonnerToast(props.title as string, {
+    description: props.description,
+    action: props.action ? {
+      label: props.action.altText,
+      onClick: props.action.onClick,
+    } : undefined,
+  });
+
   dispatch({
     type: actionTypes.ADD_TOAST,
     toast: {
@@ -135,7 +146,7 @@ function toast(props: Toast) {
 
   return {
     id,
-    dismiss: () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id }),
+    dismiss,
     update: (props: Toast) =>
       dispatch({
         type: actionTypes.UPDATE_TOAST,
@@ -144,19 +155,24 @@ function toast(props: Toast) {
   };
 }
 
+// Helper functions for different toast types
 toast.success = (content: string) => {
+  sonnerToast.success(content);
   return toast({ title: "Success", description: content });
 };
 
 toast.error = (content: string) => {
+  sonnerToast.error(content);
   return toast({ title: "Error", description: content });
 };
 
 toast.info = (content: string) => {
+  sonnerToast.info(content);
   return toast({ title: "Info", description: content });
 };
 
 toast.warning = (content: string) => {
+  sonnerToast.warning(content);
   return toast({ title: "Warning", description: content });
 };
 
