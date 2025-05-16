@@ -33,6 +33,7 @@ import AdminSuppliers from "@/pages/admin/AdminSuppliers";
 import AdminPurchaseOrders from "@/pages/admin/AdminPurchaseOrders";
 import AdminExternalLinks from "@/pages/admin/AdminExternalLinks";
 import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminShipments from "@/pages/admin/AdminShipments";
 
 // Not Found
 import NotFound from "@/pages/NotFound";
@@ -71,6 +72,7 @@ const App = () => (
                     <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
                     <Route path="external-links" element={<AdminExternalLinks />} />
                     <Route path="settings" element={<AdminSettings />} />
+                    <Route path="shipments" element={<AdminShipments />} />
                   </Route>
                   
                   {/* Not Found Route */}
