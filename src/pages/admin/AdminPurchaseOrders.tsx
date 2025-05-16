@@ -37,7 +37,8 @@ export default function AdminPurchaseOrders() {
       search === "" ||
       po.poNumber.toLowerCase().includes(search.toLowerCase()) ||
       getSupplierName(po.supplierId).toLowerCase().includes(search.toLowerCase()) ||
-      getProjectName(po.projectId).toLowerCase().includes(search.toLowerCase());
+      getProjectName(po.projectId).toLowerCase().includes(search.toLowerCase()) ||
+      (po.description && po.description.toLowerCase().includes(search.toLowerCase()));
     
     const matchesStatus = statusFilter ? po.status === statusFilter : true;
     
@@ -154,7 +155,16 @@ export default function AdminPurchaseOrders() {
               {filteredPOs.length > 0 ? (
                 filteredPOs.map((po) => (
                   <TableRow key={po.id}>
-                    <TableCell className="font-medium">{po.poNumber}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{po.poNumber}</span>
+                        {po.description && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {po.description}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                     <TableCell>{getProjectName(po.projectId)}</TableCell>
                     <TableCell>{formatCurrency(po.amount)}</TableCell>

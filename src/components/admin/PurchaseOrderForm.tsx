@@ -47,7 +47,7 @@ export default function PurchaseOrderForm({
     progress: 0,
     amount: 0,
     description: "",
-    parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
+    parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending", progress: 0 }],
   });
   
   useEffect(() => {
@@ -62,7 +62,10 @@ export default function PurchaseOrderForm({
         progress: purchaseOrder.progress || 0, 
         amount: purchaseOrder.amount || 0,
         description: purchaseOrder.description || "",
-        parts: purchaseOrder.parts,
+        parts: purchaseOrder.parts.map(part => ({
+          ...part,
+          progress: part.progress || 0
+        })),
       });
     } else {
       // Reset form for new PO
@@ -76,7 +79,7 @@ export default function PurchaseOrderForm({
         progress: 0,
         amount: 0,
         description: "",
-        parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
+        parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending", progress: 0 }],
       });
     }
   }, [purchaseOrder, open]);
@@ -88,7 +91,12 @@ export default function PurchaseOrderForm({
   const handlePartChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const newParts = [...prev.parts];
-      newParts[index] = { ...newParts[index], [field]: field === 'quantity' ? Number(value) : value };
+      newParts[index] = { 
+        ...newParts[index], 
+        [field]: field === 'quantity' ? Number(value) : 
+                field === 'progress' ? Number(value) : 
+                value 
+      };
       return { ...prev, parts: newParts };
     });
   };
@@ -98,7 +106,7 @@ export default function PurchaseOrderForm({
       ...prev,
       parts: [
         ...prev.parts,
-        { id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" },
+        { id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending", progress: 0 },
       ],
     }));
   };
@@ -116,12 +124,12 @@ export default function PurchaseOrderForm({
     });
   };
 
-  // Calculate progress based on parts status
+  // Calculate progress based on parts status and progress
   const calculateProgressFromParts = () => {
     if (!formData.parts.length) return 0;
     
-    const completedParts = formData.parts.filter(part => part.status === "Completed").length;
-    return Math.round((completedParts / formData.parts.length) * 100);
+    const totalProgress = formData.parts.reduce((sum, part) => sum + part.progress, 0);
+    return Math.round(totalProgress / formData.parts.length);
   };
   
   // Update progress when parts status changes
@@ -196,6 +204,18 @@ export default function PurchaseOrderForm({
                 value={formData.issuedDate}
                 onChange={(e) => handleChange("issuedDate", e.target.value)}
                 required
+              />
+            </div>
+            
+            {/* Description Section - moved between PO Number and Project */}
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description || ""}
+                onChange={(e) => handleChange("description", e.target.value)}
+                placeholder="Enter purchase order description..."
+                rows={3}
               />
             </div>
             
@@ -282,18 +302,6 @@ export default function PurchaseOrderForm({
             </div>
           </div>
           
-          {/* Description Section */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description || ""}
-              onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="Enter purchase order description..."
-              rows={3}
-            />
-          </div>
-          
           {/* Progress Section */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -327,7 +335,7 @@ export default function PurchaseOrderForm({
             </div>
             
             {formData.parts.map((part, index) => (
-              <div key={part.id} className="grid grid-cols-4 gap-4 mb-4 p-3 border rounded">
+              <div key={part.id} className="grid grid-cols-5 gap-4 mb-4 p-3 border rounded">
                 <div className="space-y-2">
                   <Label htmlFor={`part-name-${index}`}>Part Name</Label>
                   <Input
@@ -369,6 +377,18 @@ export default function PurchaseOrderForm({
                       <SelectItem value="Delayed">Delayed</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor={`part-progress-${index}`}>Progress: {part.progress}%</Label>
+                  <Slider
+                    id={`part-progress-${index}`}
+                    value={[part.progress || 0]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(values) => handlePartChange(index, "progress", values[0])}
+                  />
                 </div>
                 
                 <div className="flex items-end justify-end">

@@ -13,12 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Ship, Package } from "lucide-react";
 
 export default function ProjectDetails() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { projects, clients, suppliers, purchaseOrders } = useData();
+  const { projects, clients, suppliers, purchaseOrders, shipments } = useData();
   
   // Find the project
   const project = projects.find(p => p.id === projectId);
@@ -36,11 +36,18 @@ export default function ProjectDetails() {
   // Get client details
   const client = clients.find(c => c.id === project.clientId);
   
-  // Get POs related to this project
+  // Get POs related to this project and count unique PO numbers
   const projectPOs = purchaseOrders.filter(po => po.projectId === project.id);
-  const activePOs = projectPOs.filter(po => po.status === "Active").length;
-  const completedPOs = projectPOs.filter(po => po.status === "Completed").length;
-  const delayedPOs = projectPOs.filter(po => po.status === "Delayed").length;
+  const uniquePONumbers = [...new Set(projectPOs.map(po => po.poNumber))];
+  const activePOs = uniquePONumbers.filter(poNumber => 
+    projectPOs.some(po => po.poNumber === poNumber && po.status === "Active")
+  ).length;
+  const completedPOs = uniquePONumbers.filter(poNumber => 
+    projectPOs.every(po => po.poNumber === poNumber && po.status === "Completed")
+  ).length;
+  const delayedPOs = uniquePONumbers.filter(poNumber => 
+    projectPOs.some(po => po.poNumber === poNumber && po.status === "Delayed")
+  ).length;
   
   // Get total parts count
   const totalParts = projectPOs.reduce((total, po) => total + po.parts.length, 0);
@@ -53,6 +60,10 @@ export default function ProjectDetails() {
   const upcomingDeadlines = projectPOs
     .filter(po => po.status === "Active")
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  
+  // Get shipments for this project
+  const projectShipments = shipments.filter(s => s.project_id === project.id)
+    .sort((a, b) => new Date(a.eta_date).getTime() - new Date(b.eta_date).getTime());
   
   // Calculate days remaining
   const calculateDaysRemaining = (deadline: string): number => {
@@ -81,6 +92,10 @@ export default function ProjectDetails() {
         return "bg-red-500";
       case "Active":
         return "bg-blue-500";
+      case "In Transit":
+        return "bg-blue-500";
+      case "Delivered":
+        return "bg-green-500";
       default:
         return "bg-gray-500";
     }
@@ -181,7 +196,7 @@ export default function ProjectDetails() {
               <div className="stat-card">
                 <div>
                   <p className="text-sm text-muted-foreground">Total POs</p>
-                  <p className="text-xl font-bold">{projectPOs.length}</p>
+                  <p className="text-xl font-bold">{uniquePONumbers.length}</p>
                 </div>
               </div>
               
@@ -233,6 +248,7 @@ export default function ProjectDetails() {
               <TableHeader>
                 <TableRow>
                   <TableHead>PO Number</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Supplier</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Parts</TableHead>
@@ -244,6 +260,7 @@ export default function ProjectDetails() {
                   projectPOs.map((po) => (
                     <TableRow key={po.id} className="hover:bg-secondary/50 transition-colors animate-fade-in">
                       <TableCell className="font-medium">{po.poNumber}</TableCell>
+                      <TableCell>{po.description || "No description"}</TableCell>
                       <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(po.status)}>
@@ -265,7 +282,7 @@ export default function ProjectDetails() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No purchase orders found.
                     </TableCell>
                   </TableRow>
@@ -288,7 +305,9 @@ export default function ProjectDetails() {
                   return (
                     <div key={po.id} className="flex items-center justify-between border-b pb-2">
                       <div>
-                        <p className="font-medium">{po.poNumber}</p>
+                        <p className="font-medium">
+                          {po.poNumber} - {getSupplierName(po.supplierId)}
+                        </p>
                         <div className="flex flex-col space-y-1">
                           {po.parts.map(part => (
                             <div key={part.id} className="flex items-center text-sm">
@@ -301,7 +320,6 @@ export default function ProjectDetails() {
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{getSupplierName(po.supplierId)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm">{new Date(po.deadline).toLocaleDateString()}</p>
@@ -322,6 +340,74 @@ export default function ProjectDetails() {
                 No upcoming deadlines
               </div>
             )}
+          </CardContent>
+        </Card>
+        
+        {/* Shipments Section */}
+        <Card className="card-hover">
+          <CardHeader className="pb-2 flex items-center">
+            <Ship className="h-5 w-5 mr-2 text-primary" />
+            <CardTitle className="text-lg font-medium">Project Shipments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tracking/Container</TableHead>
+                  <TableHead>Shipped Date</TableHead>
+                  <TableHead>ETD</TableHead>
+                  <TableHead>ETA</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projectShipments.length > 0 ? (
+                  projectShipments.map((shipment) => (
+                    <TableRow key={shipment.id} className="hover:bg-secondary/50 transition-colors animate-fade-in">
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Package className="h-4 w-4 mr-2" />
+                          {shipment.type}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getSupplierName(shipment.supplier_id)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(shipment.status)}>
+                          {shipment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {shipment.type === "Sea" 
+                          ? shipment.container_number || "N/A" 
+                          : shipment.tracking_number || "N/A"}
+                      </TableCell>
+                      <TableCell>{new Date(shipment.shipped_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(shipment.etd_date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{new Date(shipment.eta_date).toLocaleDateString()}</span>
+                          {shipment.status !== "Delivered" && (
+                            <span className={`text-xs ${
+                              calculateDaysRemaining(shipment.eta_date) < 7 ? 'text-red-500' : 'text-muted-foreground'
+                            }`}>
+                              {calculateDaysRemaining(shipment.eta_date)} days remaining
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      No shipments found for this project.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>

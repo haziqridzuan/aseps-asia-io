@@ -13,10 +13,20 @@ export default function Dashboard() {
   // Calculate dashboard metrics
   const activeProjects = projects.filter(p => p.status === "In Progress").length;
   const completedProjects = projects.filter(p => p.status === "Completed").length;
+  
+  // Count unique PO numbers for each status
+  const uniquePONumbers = [...new Set(purchaseOrders.map(po => po.poNumber))];
+  const activePOCount = uniquePONumbers.filter(poNumber => 
+    purchaseOrders.some(po => po.poNumber === poNumber && po.status === "Active")
+  ).length;
+  const completedPOCount = uniquePONumbers.filter(poNumber => 
+    purchaseOrders.every(po => po.poNumber === poNumber && po.status === "Completed")
+  ).length;
+  const delayedPOCount = uniquePONumbers.filter(poNumber => 
+    purchaseOrders.some(po => po.poNumber === poNumber && po.status === "Delayed")
+  ).length;
+  
   const activeSuppliers = suppliers.length;
-  const activePOs = purchaseOrders.filter(po => po.status === "Active").length;
-  const completedPOs = purchaseOrders.filter(po => po.status === "Completed").length;
-  const delayedPOs = purchaseOrders.filter(po => po.status === "Delayed").length;
   
   // Project status data for chart
   const projectStatusData = [
@@ -59,16 +69,16 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="Active POs" 
-          value={activePOs} 
+          value={activePOCount} 
           trend={{ value: 8, positive: true }} 
         />
         <StatCard 
           title="Completed POs" 
-          value={completedPOs} 
+          value={completedPOCount} 
         />
         <StatCard 
           title="Delayed POs" 
-          value={delayedPOs}
+          value={delayedPOCount}
           trend={{ value: 15, positive: false }} 
         />
         <StatCard 
