@@ -29,7 +29,7 @@ export interface Part {
   id: string;
   name: string;
   quantity: number;
-  status: "Pending" | "In Progress" | "Completed" | "Delayed";
+  status: "Pending" | "In Progress" | "Completed" | "Delayed" | string;
   progress?: number;
 }
 
@@ -38,7 +38,7 @@ export interface PurchaseOrder {
   poNumber: string;
   projectId: string;
   supplierId: string;
-  status: "Active" | "Completed" | "Delayed";
+  status: "Active" | "Completed" | "Delayed" | string;
   issuedDate: string;
   deadline: string;
   progress?: number;
@@ -52,7 +52,7 @@ export interface Project {
   name: string;
   clientId: string;
   location: string;
-  status: "In Progress" | "Completed" | "Pending" | "Delayed";
+  status: "In Progress" | "Completed" | "Pending" | "Delayed" | string;
   progress: number;
   startDate: string;
   endDate: string;

@@ -62,8 +62,8 @@ export default function ProjectDetails() {
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
   
   // Get shipments for this project
-  const projectShipments = shipments.filter(s => s.project_id === project.id)
-    .sort((a, b) => new Date(a.eta_date).getTime() - new Date(b.eta_date).getTime());
+  const projectShipments = shipments.filter(s => s.projectId === project.id)
+    .sort((a, b) => new Date(a.etaDate).getTime() - new Date(b.etaDate).getTime());
   
   // Calculate days remaining
   const calculateDaysRemaining = (deadline: string): number => {
@@ -372,7 +372,7 @@ export default function ProjectDetails() {
                           {shipment.type}
                         </div>
                       </TableCell>
-                      <TableCell>{getSupplierName(shipment.supplier_id)}</TableCell>
+                      <TableCell>{getSupplierName(shipment.supplierId)}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(shipment.status)}>
                           {shipment.status}
@@ -380,19 +380,19 @@ export default function ProjectDetails() {
                       </TableCell>
                       <TableCell>
                         {shipment.type === "Sea" 
-                          ? shipment.container_number || "N/A" 
-                          : shipment.tracking_number || "N/A"}
+                          ? shipment.containerNumber || "N/A" 
+                          : shipment.trackingNumber || "N/A"}
                       </TableCell>
-                      <TableCell>{new Date(shipment.shipped_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(shipment.etd_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(shipment.shippedDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(shipment.etdDate).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span>{new Date(shipment.eta_date).toLocaleDateString()}</span>
+                          <span>{new Date(shipment.etaDate).toLocaleDateString()}</span>
                           {shipment.status !== "Delivered" && (
                             <span className={`text-xs ${
-                              calculateDaysRemaining(shipment.eta_date) < 7 ? 'text-red-500' : 'text-muted-foreground'
+                              calculateDaysRemaining(shipment.etaDate) < 7 ? 'text-red-500' : 'text-muted-foreground'
                             }`}>
-                              {calculateDaysRemaining(shipment.eta_date)} days remaining
+                              {calculateDaysRemaining(shipment.etaDate)} days remaining
                             </span>
                           )}
                         </div>
