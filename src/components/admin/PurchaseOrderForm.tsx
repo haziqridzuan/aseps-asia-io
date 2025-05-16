@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -44,6 +45,8 @@ export default function PurchaseOrderForm({
     deadline: "",
     issuedDate: new Date().toISOString().substring(0, 10),
     progress: 0,
+    amount: 0,
+    description: "",
     parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
   });
   
@@ -57,6 +60,8 @@ export default function PurchaseOrderForm({
         deadline: purchaseOrder.deadline.substring(0, 10),
         issuedDate: purchaseOrder.issuedDate.substring(0, 10),
         progress: purchaseOrder.progress || 0, 
+        amount: purchaseOrder.amount || 0,
+        description: purchaseOrder.description || "",
         parts: purchaseOrder.parts,
       });
     } else {
@@ -69,6 +74,8 @@ export default function PurchaseOrderForm({
         deadline: "",
         issuedDate: new Date().toISOString().substring(0, 10),
         progress: 0,
+        amount: 0,
+        description: "",
         parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
       });
     }
@@ -262,6 +269,29 @@ export default function PurchaseOrderForm({
                 required
               />
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="amount">PO Value</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={formData.amount || 0}
+                onChange={(e) => handleChange("amount", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+          
+          {/* Description Section */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description || ""}
+              onChange={(e) => handleChange("description", e.target.value)}
+              placeholder="Enter purchase order description..."
+              rows={3}
+            />
           </div>
           
           {/* Progress Section */}

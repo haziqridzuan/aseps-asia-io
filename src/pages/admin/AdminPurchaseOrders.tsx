@@ -44,10 +44,15 @@ export default function AdminPurchaseOrders() {
     return matchesSearch && matchesStatus;
   });
   
-  const handleDeletePO = (poId: string) => {
+  const handleDeletePO = async (poId: string) => {
     if (confirm("Are you sure you want to delete this purchase order?")) {
-      deletePurchaseOrder(poId);
-      toast.success("Purchase order deleted successfully");
+      try {
+        await deletePurchaseOrder(poId);
+        toast.success("Purchase order deleted successfully");
+      } catch (error) {
+        console.error("Error deleting purchase order:", error);
+        toast.error("Failed to delete purchase order");
+      }
     }
   };
   
@@ -75,6 +80,17 @@ export default function AdminPurchaseOrders() {
   const getProjectName = (projectId: string): string => {
     const project = projects.find(p => p.id === projectId);
     return project ? project.name : "Unknown Project";
+  };
+  
+  // Format currency
+  const formatCurrency = (amount: number | undefined): string => {
+    if (!amount) return "-";
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
   
   return (
@@ -127,6 +143,7 @@ export default function AdminPurchaseOrders() {
                 <TableHead>PO Number</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead>Project</TableHead>
+                <TableHead>Value</TableHead>
                 <TableHead>Issue Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Parts</TableHead>
@@ -140,6 +157,7 @@ export default function AdminPurchaseOrders() {
                     <TableCell className="font-medium">{po.poNumber}</TableCell>
                     <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                     <TableCell>{getProjectName(po.projectId)}</TableCell>
+                    <TableCell>{formatCurrency(po.amount)}</TableCell>
                     <TableCell>{format(new Date(po.issuedDate), "MMM d, yyyy")}</TableCell>
                     <TableCell>
                       <span 
@@ -177,7 +195,7 @@ export default function AdminPurchaseOrders() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     No purchase orders found.
                   </TableCell>
                 </TableRow>

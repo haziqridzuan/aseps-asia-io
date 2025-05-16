@@ -109,6 +109,7 @@ export const syncAllData = async (
 const clearTables = async (): Promise<void> => {
   try {
     await supabase.from('external_links').delete().gt('id', '');
+    await supabase.from('shipments').delete().gt('id', '');
     await supabase.from('parts').delete().gt('id', '');
     await supabase.from('purchase_orders').delete().gt('id', '');
     await supabase.from('projects').delete().gt('id', '');
@@ -293,6 +294,33 @@ export const syncExternalLinks = async (externalLinks: any[]): Promise<SyncResul
   }
 };
 
+// Sync shipments data
+export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
+  try {
+    const { error } = await supabase
+      .from('shipments')
+      .upsert(shipments, { 
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      message: "Shipments synchronized successfully",
+      insertedCount: shipments.length
+    };
+  } catch (error) {
+    console.error("Failed to sync shipments:", error);
+    return {
+      success: false,
+      message: "Failed to sync shipments",
+      error
+    };
+  }
+};
+
 // Function to load all data from Supabase
 export const loadAllData = async () => {
   try {
@@ -338,6 +366,13 @@ export const loadAllData = async () => {
     
     if (externalLinksError) throw externalLinksError;
 
+    // Load shipments
+    const { data: shipmentsData, error: shipmentsError } = await supabase
+      .from('shipments')
+      .select('*');
+    
+    if (shipmentsError) throw shipmentsError;
+
     // Combine parts with purchase orders
     const purchaseOrdersWithParts = purchaseOrdersData.map(po => {
       const relatedParts = partsData.filter(part => part.po_id === po.id);
@@ -353,7 +388,8 @@ export const loadAllData = async () => {
       projects: projectsData,
       suppliers: suppliersData,
       purchaseOrders: purchaseOrdersWithParts,
-      externalLinks: externalLinksData
+      externalLinks: externalLinksData,
+      shipments: shipmentsData
     };
   } catch (error) {
     console.error("Failed to load data from Supabase:", error);
@@ -364,7 +400,8 @@ export const loadAllData = async () => {
       projects: [],
       suppliers: [],
       purchaseOrders: [],
-      externalLinks: []
+      externalLinks: [],
+      shipments: []
     };
   }
 };
