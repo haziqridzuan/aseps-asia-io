@@ -82,8 +82,9 @@ export default function ShipmentForm({
           if (error) throw error;
           
           if (data) {
-            setShipment(data);
+            // Map database fields to Shipment interface fields
             setFormData({
+              id: data.id,
               type: data.type || "Sea",
               projectId: data.project_id || "",
               supplierId: data.supplier_id || "",
@@ -150,7 +151,7 @@ export default function ShipmentForm({
     setIsSubmitting(true);
     
     try {
-      // Transform data for Supabase
+      // Transform data for Supabase - map from interface to database field names
       const shipmentData = {
         type: formData.type,
         project_id: formData.projectId,
