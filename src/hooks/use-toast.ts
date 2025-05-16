@@ -1,7 +1,6 @@
 
 import * as React from "react";
 import { toast as sonnerToast } from "sonner";
-import { type ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 export type ToasterToast = {
   id: string

@@ -196,6 +196,7 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          amount: number | null
           created_at: string | null
           deadline: string
           description: string | null
@@ -209,6 +210,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          amount?: number | null
           created_at?: string | null
           deadline: string
           description?: string | null
@@ -222,6 +224,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          amount?: number | null
           created_at?: string | null
           deadline?: string
           description?: string | null
