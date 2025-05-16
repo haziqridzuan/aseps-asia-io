@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData, Supplier } from "@/contexts/DataContext";
 import { Input } from "@/components/ui/input";
@@ -106,11 +105,7 @@ export function SupplierForm({ supplierId, onSuccess, onCancel }: SupplierFormPr
       }
     } catch (error) {
       console.error("Error saving supplier:", error);
-      toast({
-        title: "Error",
-        description: "There was an error saving the supplier",
-        variant: "destructive",
-      });
+      toast.error("There was an error saving the supplier");
     } finally {
       setIsLoading(false);
     }

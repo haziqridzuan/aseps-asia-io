@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -60,11 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Invalid credentials");
       }
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Invalid credentials",
-        variant: "destructive",
-      });
+      toast.error("Invalid credentials");
     } finally {
       setIsLoading(false);
     }

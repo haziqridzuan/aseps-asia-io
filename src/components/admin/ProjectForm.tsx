@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData, Project } from "@/contexts/DataContext";
 import { Input } from "@/components/ui/input";
@@ -99,11 +98,7 @@ export function ProjectForm({ projectId, onSuccess, onCancel }: ProjectFormProps
       }
     } catch (error) {
       console.error("Error saving project:", error);
-      toast({
-        title: "Error",
-        description: "There was an error saving the project",
-        variant: "destructive",
-      });
+      toast.error("There was an error saving the project");
     } finally {
       setIsLoading(false);
     }

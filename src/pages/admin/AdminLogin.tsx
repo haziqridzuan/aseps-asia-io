@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -25,11 +24,7 @@ export default function AdminLogin() {
     e.preventDefault();
     
     if (!password) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter the password",
-        variant: "destructive",
-      });
+      toast.error("Please enter the password");
       return;
     }
     
