@@ -1,5 +1,6 @@
+
 import { supabase } from './client';
-import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink, Shipment } from "@/contexts/DataContext";
+import type { Project, Client, Supplier, PurchaseOrder, Part, ExternalLink } from "@/contexts/DataContext";
 
 // Interface for sync operations
 export interface SyncResult {
@@ -17,8 +18,7 @@ export const syncAllData = async (
   clients: any[], 
   suppliers: any[],
   purchaseOrders: any[], 
-  externalLinks: any[],
-  shipments: any[] = []
+  externalLinks: any[]
 ): Promise<SyncResult> => {
   try {
     // Clear existing data (optional - comment out if you want to preserve existing data)
@@ -83,23 +83,6 @@ export const syncAllData = async (
       };
     }
 
-    // Sync shipments if available
-    if (shipments && shipments.length > 0) {
-      try {
-        const shipmentsResult = await syncShipments(shipments);
-        if (!shipmentsResult.success) {
-          return { 
-            success: false, 
-            message: "Failed to sync shipments", 
-            error: shipmentsResult.error 
-          };
-        }
-      } catch (error) {
-        console.error("Failed to sync shipments:", error);
-        // Continue with the rest of the sync even if shipments fail
-      }
-    }
-
     return {
       success: true,
       message: "All data synchronized successfully",
@@ -125,14 +108,6 @@ export const syncAllData = async (
 // Clear all tables (optional - use carefully)
 const clearTables = async (): Promise<void> => {
   try {
-    // Try to clear shipments table, but don't error if it doesn't exist yet
-    try {
-      // Use type assertion to avoid TypeScript errors
-      await (supabase as any).from('shipments').delete().gt('id', '');
-    } catch (error) {
-      console.warn("Could not clear shipments table, it might not exist yet:", error);
-    }
-    
     await supabase.from('external_links').delete().gt('id', '');
     await supabase.from('parts').delete().gt('id', '');
     await supabase.from('purchase_orders').delete().gt('id', '');
@@ -267,14 +242,9 @@ export const syncParts = async (parts: any[]): Promise<SyncResult> => {
       };
     }
     
-    const partsToSync = parts.map(part => ({
-      ...part,
-      progress: part.progress || 0
-    }));
-    
     const { error } = await supabase
       .from('parts')
-      .upsert(partsToSync, { 
+      .upsert(parts, { 
         onConflict: 'id',
         ignoreDuplicates: false
       });
@@ -318,64 +288,6 @@ export const syncExternalLinks = async (externalLinks: any[]): Promise<SyncResul
     return {
       success: false,
       message: "Failed to sync external links",
-      error
-    };
-  }
-};
-
-// Sync shipments data
-export const syncShipments = async (shipments: any[]): Promise<SyncResult> => {
-  try {
-    if (shipments.length === 0) {
-      return {
-        success: true,
-        message: "No shipments to synchronize",
-        insertedCount: 0
-      };
-    }
-    
-    // Check if shipments table exists before attempting to sync
-    let tableExists = false;
-    try {
-      // This is a safe way to check if the table exists without throwing errors
-      const { data, error } = await (supabase as any)
-        .from('shipments')
-        .select('count')
-        .limit(1);
-      
-      tableExists = !error;
-    } catch (e) {
-      console.warn("Checking shipments table existence:", e);
-    }
-    
-    if (!tableExists) {
-      console.warn("Shipments table doesn't exist yet. Skipping shipment sync.");
-      return {
-        success: true,
-        message: "Shipments table doesn't exist yet. Skipping shipment sync.",
-        insertedCount: 0
-      };
-    }
-    
-    const { error } = await (supabase as any)
-      .from('shipments')
-      .upsert(shipments, { 
-        onConflict: 'id',
-        ignoreDuplicates: false
-      });
-
-    if (error) throw error;
-
-    return {
-      success: true,
-      message: "Shipments synchronized successfully",
-      insertedCount: shipments.length
-    };
-  } catch (error) {
-    console.error("Failed to sync shipments:", error);
-    return {
-      success: false,
-      message: "Failed to sync shipments",
       error
     };
   }
@@ -426,36 +338,6 @@ export const loadAllData = async () => {
     
     if (externalLinksError) throw externalLinksError;
 
-    // Load shipments
-    let shipments = [];
-    try {
-      // Check if shipments table exists before attempting to load
-      let tableExists = false;
-      try {
-        // This is a safe way to check if the table exists without throwing errors
-        const { data, error } = await (supabase as any)
-          .from('shipments')
-          .select('count')
-          .limit(1);
-        
-        tableExists = !error;
-      } catch (e) {
-        console.warn("Checking shipments table existence:", e);
-      }
-      
-      if (tableExists) {
-        const { data: shipmentsData, error: shipmentsError } = await (supabase as any)
-          .from('shipments')
-          .select('*');
-        
-        if (!shipmentsError) {
-          shipments = shipmentsData || [];
-        }
-      }
-    } catch (error) {
-      console.warn("Could not load shipments, table might not exist yet:", error);
-    }
-
     // Combine parts with purchase orders
     const purchaseOrdersWithParts = purchaseOrdersData.map(po => {
       const relatedParts = partsData.filter(part => part.po_id === po.id);
@@ -471,8 +353,7 @@ export const loadAllData = async () => {
       projects: projectsData,
       suppliers: suppliersData,
       purchaseOrders: purchaseOrdersWithParts,
-      externalLinks: externalLinksData,
-      shipments
+      externalLinks: externalLinksData
     };
   } catch (error) {
     console.error("Failed to load data from Supabase:", error);
@@ -483,8 +364,7 @@ export const loadAllData = async () => {
       projects: [],
       suppliers: [],
       purchaseOrders: [],
-      externalLinks: [],
-      shipments: []
+      externalLinks: []
     };
   }
 };

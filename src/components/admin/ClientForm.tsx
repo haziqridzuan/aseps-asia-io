@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData, Client } from "@/contexts/DataContext";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,11 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
       }
     } catch (error) {
       console.error("Error saving client:", error);
-      toast.error("There was an error saving the client");
+      toast({
+        title: "Error",
+        description: "There was an error saving the client",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

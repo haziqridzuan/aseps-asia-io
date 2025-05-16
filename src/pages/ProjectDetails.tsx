@@ -14,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChevronLeft } from "lucide-react";
-import { ProjectShipments } from "@/components/projects/ProjectShipments";
 
 export default function ProjectDetails() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -39,32 +38,9 @@ export default function ProjectDetails() {
   
   // Get POs related to this project
   const projectPOs = purchaseOrders.filter(po => po.projectId === project.id);
-  
-  // Count unique PO numbers for summary
-  const uniquePoNumbers = new Set(projectPOs.map(po => po.poNumber));
-  const totalPOs = uniquePoNumbers.size;
-  
-  // Count active and completed POs by unique PO number
-  const poStatusByPoNumber = new Map();
-  projectPOs.forEach(po => {
-    // Only set if the PO number doesn't exist already or if the current status is prioritized
-    // Priority: Active > Delayed > Completed
-    if (!poStatusByPoNumber.has(po.poNumber)) {
-      poStatusByPoNumber.set(po.poNumber, po.status);
-    } else {
-      const currentStatus = poStatusByPoNumber.get(po.poNumber);
-      if (
-        currentStatus === "Completed" || 
-        (currentStatus === "Delayed" && po.status === "Active")
-      ) {
-        poStatusByPoNumber.set(po.poNumber, po.status);
-      }
-    }
-  });
-  
-  const activePOs = Array.from(poStatusByPoNumber.values()).filter(status => status === "Active").length;
-  const completedPOs = Array.from(poStatusByPoNumber.values()).filter(status => status === "Completed").length;
-  const delayedPOs = Array.from(poStatusByPoNumber.values()).filter(status => status === "Delayed").length;
+  const activePOs = projectPOs.filter(po => po.status === "Active").length;
+  const completedPOs = projectPOs.filter(po => po.status === "Completed").length;
+  const delayedPOs = projectPOs.filter(po => po.status === "Delayed").length;
   
   // Get total parts count
   const totalParts = projectPOs.reduce((total, po) => total + po.parts.length, 0);
@@ -205,7 +181,7 @@ export default function ProjectDetails() {
               <div className="stat-card">
                 <div>
                   <p className="text-sm text-muted-foreground">Total POs</p>
-                  <p className="text-xl font-bold">{totalPOs}</p>
+                  <p className="text-xl font-bold">{projectPOs.length}</p>
                 </div>
               </div>
               
@@ -246,9 +222,6 @@ export default function ProjectDetails() {
         </Card>
       </div>
       
-      {/* Shipments Section */}
-      <ProjectShipments projectId={project.id} />
-      
       {/* PO Details */}
       <div className="grid grid-cols-1 gap-6">
         <Card className="card-hover">
@@ -260,7 +233,6 @@ export default function ProjectDetails() {
               <TableHeader>
                 <TableRow>
                   <TableHead>PO Number</TableHead>
-                  <TableHead>Description</TableHead>
                   <TableHead>Supplier</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Parts</TableHead>
@@ -272,7 +244,6 @@ export default function ProjectDetails() {
                   projectPOs.map((po) => (
                     <TableRow key={po.id} className="hover:bg-secondary/50 transition-colors animate-fade-in">
                       <TableCell className="font-medium">{po.poNumber}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{po.description || '-'}</TableCell>
                       <TableCell>{getSupplierName(po.supplierId)}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(po.status)}>
@@ -294,7 +265,7 @@ export default function ProjectDetails() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No purchase orders found.
                     </TableCell>
                   </TableRow>

@@ -196,10 +196,8 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
-          amount: number | null
           created_at: string | null
           deadline: string
-          description: string | null
           id: string
           issued_date: string
           po_number: string
@@ -210,10 +208,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          amount?: number | null
           created_at?: string | null
           deadline: string
-          description?: string | null
           id?: string
           issued_date: string
           po_number: string
@@ -224,10 +220,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          amount?: number | null
           created_at?: string | null
           deadline?: string
-          description?: string | null
           id?: string
           issued_date?: string
           po_number?: string
@@ -247,95 +241,6 @@ export type Database = {
           },
           {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      shipments: {
-        Row: {
-          container_number: string | null
-          container_size: string | null
-          container_type: string | null
-          created_at: string | null
-          eta_date: string
-          etd_date: string
-          id: string
-          notes: string | null
-          part_id: string | null
-          po_id: string | null
-          project_id: string | null
-          shipped_date: string
-          status: string | null
-          supplier_id: string | null
-          tracking_number: string | null
-          type: string
-          updated_at: string | null
-        }
-        Insert: {
-          container_number?: string | null
-          container_size?: string | null
-          container_type?: string | null
-          created_at?: string | null
-          eta_date: string
-          etd_date: string
-          id?: string
-          notes?: string | null
-          part_id?: string | null
-          po_id?: string | null
-          project_id?: string | null
-          shipped_date: string
-          status?: string | null
-          supplier_id?: string | null
-          tracking_number?: string | null
-          type: string
-          updated_at?: string | null
-        }
-        Update: {
-          container_number?: string | null
-          container_size?: string | null
-          container_type?: string | null
-          created_at?: string | null
-          eta_date?: string
-          etd_date?: string
-          id?: string
-          notes?: string | null
-          part_id?: string | null
-          po_id?: string | null
-          project_id?: string | null
-          shipped_date?: string
-          status?: string | null
-          supplier_id?: string | null
-          tracking_number?: string | null
-          type?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shipments_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipments_po_id_fkey"
-            columns: ["po_id"]
-            isOneToOne: false
-            referencedRelation: "purchase_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipments_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipments_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"

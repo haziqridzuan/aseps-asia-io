@@ -1,25 +1,17 @@
+
 import { v4 as uuidv4 } from 'uuid';
-import type {
-  Project,
-  Client,
-  Supplier,
-  PurchaseOrder,
-  ExternalLink,
-  Shipment
-} from "@/contexts/DataContext";
 
 // Define the data state type
 export interface DataState {
-  projects: Project[];
-  clients: Client[];
-  suppliers: Supplier[];
-  purchaseOrders: PurchaseOrder[];
-  externalLinks: ExternalLink[];
-  shipments: Shipment[];
+  projects: any[];
+  clients: any[];
+  suppliers: any[];
+  purchaseOrders: any[];
+  externalLinks: any[];
 }
 
 // Function to create dummy data
-export const createDummyData = (): DataState => {
+export function createDummyData(): DataState {
   const clients = [
     {
       id: uuidv4(),
@@ -95,7 +87,7 @@ export const createDummyData = (): DataState => {
       name: "Project Alpha",
       clientId: clients[0].id,
       location: "California",
-      status: "In Progress" as const,
+      status: "In Progress",
       progress: 45,
       startDate: "2023-01-15",
       endDate: "2023-06-30",
@@ -107,7 +99,7 @@ export const createDummyData = (): DataState => {
       name: "Project Beta",
       clientId: clients[1].id,
       location: "New York",
-      status: "Pending" as const,
+      status: "Pending",
       progress: 10,
       startDate: "2023-03-01",
       endDate: "2023-09-15",
@@ -119,7 +111,7 @@ export const createDummyData = (): DataState => {
       name: "Project Gamma",
       clientId: clients[2].id,
       location: "Texas",
-      status: "Completed" as const,
+      status: "Completed",
       progress: 100,
       startDate: "2022-11-01",
       endDate: "2023-02-28",
@@ -131,14 +123,14 @@ export const createDummyData = (): DataState => {
       name: "Project Delta",
       clientId: clients[0].id,
       location: "Washington",
-      status: "Delayed" as const,
+      status: "Delayed",
       progress: 35,
       startDate: "2022-12-15",
       endDate: "2023-05-30",
       projectManager: "Mark Wilson",
       description: "Hardware component redesign"
     }
-  ] as Project[];
+  ];
 
   const purchaseOrders = [
     {
@@ -146,7 +138,7 @@ export const createDummyData = (): DataState => {
       poNumber: "PO-2023-001",
       projectId: projects[0].id,
       supplierId: suppliers[0].id,
-      status: "Active" as const,
+      status: "Active",
       deadline: "2023-04-15",
       issuedDate: "2023-01-20",
       progress: 60,
@@ -155,13 +147,13 @@ export const createDummyData = (): DataState => {
           id: uuidv4(),
           name: "Circuit Board A2",
           quantity: 500,
-          status: "In Progress" as const
+          status: "In Progress"
         },
         {
           id: uuidv4(),
           name: "Connector Type B",
           quantity: 1000,
-          status: "Completed" as const
+          status: "Completed"
         }
       ]
     },
@@ -170,7 +162,7 @@ export const createDummyData = (): DataState => {
       poNumber: "PO-2023-002",
       projectId: projects[1].id,
       supplierId: suppliers[1].id,
-      status: "Active" as const,
+      status: "Active",
       deadline: "2023-05-30",
       issuedDate: "2023-03-10",
       progress: 30,
@@ -179,7 +171,7 @@ export const createDummyData = (): DataState => {
           id: uuidv4(),
           name: "Power Supply Unit",
           quantity: 200,
-          status: "In Progress" as const
+          status: "In Progress"
         }
       ]
     },
@@ -188,7 +180,7 @@ export const createDummyData = (): DataState => {
       poNumber: "PO-2023-003",
       projectId: projects[2].id,
       supplierId: suppliers[2].id,
-      status: "Completed" as const,
+      status: "Completed",
       deadline: "2023-02-15",
       issuedDate: "2022-12-05",
       progress: 100,
@@ -197,13 +189,13 @@ export const createDummyData = (): DataState => {
           id: uuidv4(),
           name: "LCD Display 7\"",
           quantity: 300,
-          status: "Completed" as const
+          status: "Completed"
         },
         {
           id: uuidv4(),
           name: "Touch Panel",
           quantity: 300,
-          status: "Completed" as const
+          status: "Completed"
         }
       ]
     },
@@ -212,7 +204,7 @@ export const createDummyData = (): DataState => {
       poNumber: "PO-2023-004",
       projectId: projects[3].id,
       supplierId: suppliers[0].id,
-      status: "Delayed" as const,
+      status: "Delayed",
       deadline: "2023-03-30",
       issuedDate: "2023-01-05",
       progress: 40,
@@ -221,22 +213,22 @@ export const createDummyData = (): DataState => {
           id: uuidv4(),
           name: "Custom Chassis",
           quantity: 150,
-          status: "Delayed" as const
+          status: "Delayed"
         },
         {
           id: uuidv4(),
           name: "Cooling System",
           quantity: 150,
-          status: "In Progress" as const
+          status: "In Progress"
         }
       ]
     }
-  ] as PurchaseOrder[];
+  ];
 
   const externalLinks = [
     {
       id: uuidv4(),
-      type: "Report" as const,
+      type: "Report",
       projectId: projects[0].id,
       supplierId: suppliers[0].id,
       title: "Quality Inspection Report",
@@ -245,7 +237,7 @@ export const createDummyData = (): DataState => {
     },
     {
       id: uuidv4(),
-      type: "Photo" as const,
+      type: "Photo",
       projectId: projects[0].id,
       title: "Production Line Setup",
       url: "https://example.com/photos/prod-line-456",
@@ -253,7 +245,7 @@ export const createDummyData = (): DataState => {
     },
     {
       id: uuidv4(),
-      type: "Tracking" as const,
+      type: "Tracking",
       projectId: projects[1].id,
       supplierId: suppliers[1].id,
       title: "Shipment Tracking",
@@ -262,7 +254,7 @@ export const createDummyData = (): DataState => {
     },
     {
       id: uuidv4(),
-      type: "Report" as const,
+      type: "Report",
       projectId: projects[2].id,
       title: "Final Project Report",
       url: "https://example.com/reports/final-234",
@@ -270,24 +262,20 @@ export const createDummyData = (): DataState => {
     },
     {
       id: uuidv4(),
-      type: "Photo" as const,
+      type: "Photo",
       projectId: projects[3].id,
       supplierId: suppliers[0].id,
       title: "Component Photos",
       url: "https://example.com/photos/components-567",
       date: "2023-01-15"
     }
-  ] as ExternalLink[];
-
-  // Create shipments
-  const shipments: Shipment[] = [];
+  ];
 
   return {
     projects,
     clients,
     suppliers,
     purchaseOrders,
-    externalLinks,
-    shipments
+    externalLinks
   };
-};
+}

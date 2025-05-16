@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash } from "lucide-react";
 import { format } from "date-fns";
 import PurchaseOrderForm from "@/components/admin/PurchaseOrderForm";
@@ -31,7 +32,6 @@ export default function AdminPurchaseOrders() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | undefined>(undefined);
   
-  // Display each PO independently instead of grouping by PO number
   const filteredPOs = purchaseOrders.filter(po => {
     const matchesSearch = 
       search === "" ||
@@ -129,8 +129,6 @@ export default function AdminPurchaseOrders() {
                 <TableHead>Project</TableHead>
                 <TableHead>Issue Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Amount ($)</TableHead>
                 <TableHead>Parts</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -155,8 +153,6 @@ export default function AdminPurchaseOrders() {
                         {po.status}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">{po.description || '-'}</TableCell>
-                    <TableCell>{po.amount ? `$${po.amount.toLocaleString()}` : '-'}</TableCell>
                     <TableCell>{po.parts.length}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -181,7 +177,7 @@ export default function AdminPurchaseOrders() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     No purchase orders found.
                   </TableCell>
                 </TableRow>

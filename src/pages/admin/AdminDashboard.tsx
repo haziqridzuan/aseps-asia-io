@@ -4,7 +4,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Loader2, Database, File as FileIcon, Users as UsersIcon, Package as PackageIcon, AlertTriangle } from "lucide-react";
+import { Loader2, Database, File as FileIcon, Users as UsersIcon, Package as PackageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { checkSupabaseConnection } from "@/integrations/supabase/client";
 
@@ -23,7 +23,6 @@ export default function AdminDashboard() {
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isGeneratingData, setIsGeneratingData] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   
   // Check Supabase connection on mount
@@ -31,11 +30,6 @@ export default function AdminDashboard() {
     const checkConnection = async () => {
       const connected = await checkSupabaseConnection();
       setIsConnected(connected);
-
-      // Attempt to load data if connected and page has no data yet
-      if (connected && projects.length === 0 && clients.length === 0) {
-        handleLoadFromSupabase();
-      }
     };
     
     checkConnection();
@@ -76,16 +70,8 @@ export default function AdminDashboard() {
   };
   
   const handleGenerateDummyData = () => {
-    setIsGeneratingData(true);
-    try {
-      generateDummyData();
-      toast.success("Demo data generated successfully!");
-    } catch (error) {
-      console.error("Error generating demo data:", error);
-      toast.error("Failed to generate demo data");
-    } finally {
-      setIsGeneratingData(false);
-    }
+    generateDummyData();
+    toast.success("Demo data generated successfully!");
   };
   
   return (
@@ -96,22 +82,15 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline"
-            disabled={isLoadingData || isSyncing || dataLoading || isGeneratingData}
+            disabled={isLoadingData || isSyncing || dataLoading}
             onClick={handleGenerateDummyData}
           >
-            {isGeneratingData ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              "Generate Demo Data"
-            )}
+            Generate Demo Data
           </Button>
           
           <Button 
             variant="outline"
-            disabled={isLoadingData || isSyncing || dataLoading || !isConnected || isGeneratingData}
+            disabled={isLoadingData || isSyncing || dataLoading || !isConnected}
             onClick={handleLoadFromSupabase}
           >
             {isLoadingData ? (
@@ -128,7 +107,7 @@ export default function AdminDashboard() {
           </Button>
           
           <Button 
-            disabled={isSyncing || dataLoading || !isConnected || isGeneratingData} 
+            disabled={isSyncing || dataLoading || !isConnected} 
             onClick={handleSyncWithSupabase}
           >
             {isSyncing ? (
@@ -148,8 +127,7 @@ export default function AdminDashboard() {
       
       {!isConnected && (
         <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4 flex items-center">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mr-2" />
+          <CardContent className="p-4">
             <p className="text-amber-800">
               Supabase connection issue. Please check your connection settings or try again later.
             </p>

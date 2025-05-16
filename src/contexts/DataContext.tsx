@@ -1,9 +1,8 @@
-
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { v4 as uuidv4 } from 'uuid';
+import { createDummyData, DataState } from '@/data/dummy-data';
 import { syncAllData, loadAllData } from '@/integrations/supabase/dataSync';
 import { toast } from "sonner";
-import { checkSupabaseConnection } from "@/integrations/supabase/client";
 
 // Define Types
 export interface Project {
@@ -47,7 +46,6 @@ export interface Part {
   name: string;
   quantity: number;
   status: "In Progress" | "Completed" | "Pending" | "Delayed";
-  progress?: number;
 }
 
 export interface PurchaseOrder {
@@ -60,27 +58,6 @@ export interface PurchaseOrder {
   issuedDate: string;
   parts: Part[];
   progress?: number;
-  amount?: number;
-  description?: string;
-}
-
-export interface Shipment {
-  id: string;
-  projectId: string;
-  supplierId: string;
-  poId: string;
-  partId: string;
-  type: "Air Freight" | "Ocean Freight";
-  containerNumber?: string;
-  containerSize?: string;
-  containerType?: string;
-  lockNumber?: string;
-  shippedDate: string;
-  etdDate: string;
-  etaDate: string;
-  status?: string;
-  trackingNumber?: string;
-  notes?: string;
 }
 
 export interface ExternalLink {
@@ -94,16 +71,6 @@ export interface ExternalLink {
   date: string;
 }
 
-// Define Data State Type
-interface DataState {
-  projects: Project[];
-  clients: Client[];
-  suppliers: Supplier[];
-  purchaseOrders: PurchaseOrder[];
-  externalLinks: ExternalLink[];
-  shipments: Shipment[];
-}
-
 // Define Context Type
 interface DataContextType {
   projects: Project[];
@@ -111,7 +78,6 @@ interface DataContextType {
   suppliers: Supplier[];
   purchaseOrders: PurchaseOrder[];
   externalLinks: ExternalLink[];
-  shipments: Shipment[];
   isLoading: boolean;
   
   // CRUD Operations
@@ -134,10 +100,6 @@ interface DataContextType {
   addExternalLink: (externalLink: Omit<ExternalLink, "id">) => void;
   updateExternalLink: (id: string, externalLink: Omit<ExternalLink, "id">) => void;
   deleteExternalLink: (id: string) => void;
-
-  addShipment: (shipment: Omit<Shipment, "id">) => void;
-  updateShipment: (id: string, data: Partial<Omit<Shipment, "id">>) => void;
-  deleteShipment: (id: string) => void;
   
   // Utility Functions
   generateDummyData: () => void;
@@ -148,259 +110,24 @@ interface DataContextType {
   clearAllData: () => Promise<void>;
 }
 
-// Empty data template
-const emptyData: DataState = {
-  projects: [],
-  clients: [],
-  suppliers: [],
-  purchaseOrders: [],
-  externalLinks: [],
-  shipments: []
-};
-
 // Create Context
-const DataContext = createContext<DataContextType | null>(null);
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Provider Component
 export function DataProvider({ children }: { children: ReactNode }) {
   // Initialize with empty data
-  const [data, setData] = useState<DataState>(emptyData);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
-
-  // Check Supabase connection and load data on initial mount
-  useEffect(() => {
-    const initializeData = async () => {
-      setIsLoading(true);
-      try {
-        const connected = await checkSupabaseConnection();
-        setIsSupabaseConnected(connected);
-        
-        if (connected) {
-          // Try to load data from Supabase first
-          const result = await loadAllData();
-          if (result.success) {
-            // Transform data to match our app's schema
-            const transformedData = transformSupabaseData(result);
-            setData(transformedData);
-            console.log("Loaded data from Supabase successfully");
-          } else {
-            console.warn("Failed to load data from Supabase");
-          }
-        } else {
-          console.warn("Supabase connection not available");
-        }
-      } catch (error) {
-        console.error("Error initializing data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeData();
-  }, []);
-
-  // Transform data from Supabase format to app format
-  const transformSupabaseData = (result: any): DataState => {
-    const transformedProjects = result.projects.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      clientId: p.client_id || "",
-      location: p.location || "",
-      status: p.status || "Pending",
-      progress: p.progress || 0,
-      startDate: p.start_date,
-      endDate: p.end_date,
-      projectManager: p.project_manager,
-      description: p.description
-    }));
-    
-    const transformedClients = result.clients.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      contactPerson: c.contact_person,
-      email: c.email,
-      phone: c.phone,
-      location: c.location
-    }));
-    
-    const transformedSuppliers = result.suppliers.map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      country: s.country,
-      contactPerson: s.contact_person,
-      email: s.email,
-      phone: s.phone,
-      rating: s.rating,
-      onTimeDelivery: s.on_time_delivery,
-      location: s.location,
-      positiveComments: s.positive_comments || [],
-      negativeComments: s.negative_comments || []
-    }));
-    
-    const transformedPurchaseOrders = result.purchaseOrders.map((po: any) => ({
-      id: po.id,
-      poNumber: po.po_number,
-      projectId: po.project_id,
-      supplierId: po.supplier_id,
-      status: po.status,
-      deadline: po.deadline,
-      issuedDate: po.issued_date,
-      progress: po.progress || 0,
-      amount: po.amount || 0,
-      description: po.description || "", 
-      parts: po.parts ? po.parts.map((part: any) => ({
-        id: part.id,
-        name: part.name,
-        quantity: part.quantity,
-        status: part.status || "Pending",
-        progress: part.progress || 0
-      })) : []
-    }));
-    
-    const transformedExternalLinks = result.externalLinks.map((el: any) => ({
-      id: el.id,
-      type: el.type,
-      projectId: el.project_id,
-      supplierId: el.supplier_id,
-      poId: el.po_id,
-      title: el.title,
-      url: el.url,
-      date: el.date
-    }));
-
-    const transformedShipments = result.shipments ? result.shipments.map((s: any) => ({
-      id: s.id,
-      projectId: s.project_id,
-      supplierId: s.supplier_id,
-      poId: s.po_id,
-      partId: s.part_id,
-      type: s.type,
-      shippedDate: s.shipped_date,
-      etdDate: s.etd_date,
-      etaDate: s.eta_date,
-      containerSize: s.container_size,
-      containerType: s.container_type,
-      containerNumber: s.container_number,
-      lockNumber: s.lock_number,
-      status: s.status,
-      trackingNumber: s.tracking_number,
-      notes: s.notes
-    })) : [];
-    
-    return {
-      projects: transformedProjects,
-      clients: transformedClients,
-      suppliers: transformedSuppliers,
-      purchaseOrders: transformedPurchaseOrders,
-      externalLinks: transformedExternalLinks,
-      shipments: transformedShipments || []
-    };
-  };
-
-  // Sync data with Supabase whenever it changes (excluding initial load)
-  useEffect(() => {
-    // Skip on first render when isLoading is true
-    if (!isLoading && isSupabaseConnected && data !== emptyData) {
-      // Transform local data to Supabase format
-      const syncData = () => {
-        const projectsToSync = data.projects.map(p => ({
-          id: p.id,
-          name: p.name,
-          client_id: p.clientId,
-          location: p.location,
-          status: p.status,
-          progress: p.progress,
-          start_date: p.startDate,
-          end_date: p.endDate,
-          project_manager: p.projectManager,
-          description: p.description
-        }));
-        
-        const clientsToSync = data.clients.map(c => ({
-          id: c.id,
-          name: c.name,
-          contact_person: c.contactPerson,
-          email: c.email,
-          phone: c.phone,
-          location: c.location
-        }));
-        
-        const suppliersToSync = data.suppliers.map(s => ({
-          id: s.id,
-          name: s.name,
-          country: s.country,
-          contact_person: s.contactPerson,
-          email: s.email,
-          phone: s.phone,
-          rating: s.rating,
-          on_time_delivery: s.onTimeDelivery,
-          location: s.location,
-          positive_comments: s.positiveComments || [],
-          negative_comments: s.negativeComments || []
-        }));
-        
-        const purchaseOrdersToSync = data.purchaseOrders.map(po => ({
-          id: po.id,
-          po_number: po.poNumber,
-          project_id: po.projectId,
-          supplier_id: po.supplierId,
-          status: po.status,
-          deadline: po.deadline,
-          issued_date: po.issuedDate,
-          progress: po.progress || 0,
-          amount: po.amount || 0,
-          description: po.description || ""
-        }));
-        
-        const externalLinksToSync = data.externalLinks.map(el => ({
-          id: el.id,
-          type: el.type,
-          project_id: el.projectId,
-          supplier_id: el.supplierId,
-          po_id: el.poId,
-          title: el.title,
-          url: el.url,
-          date: el.date
-        }));
-
-        const shipmentsToSync = data.shipments.map(s => ({
-          id: s.id,
-          project_id: s.projectId,
-          supplier_id: s.supplierId,
-          po_id: s.poId,
-          part_id: s.partId,
-          type: s.type,
-          shipped_date: s.shippedDate,
-          etd_date: s.etdDate,
-          eta_date: s.etaDate,
-          container_size: s.containerSize,
-          container_type: s.containerType,
-          container_number: s.containerNumber,
-          lock_number: s.lockNumber,
-          status: s.status,
-          tracking_number: s.trackingNumber,
-          notes: s.notes
-        }));
-        
-        // Sync with Supabase but don't show toast messages for automatic syncs
-        syncAllData(
-          projectsToSync,
-          clientsToSync,
-          suppliersToSync,
-          purchaseOrdersToSync,
-          externalLinksToSync,
-          shipmentsToSync
-        ).catch(error => {
-          console.error("Auto sync error:", error);
-        });
-      };
-      
-      // Add debounce to avoid too many synchronizations
-      const timeoutId = setTimeout(syncData, 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [data, isLoading, isSupabaseConnected]);
+  const [data, setData] = useState<DataState>(() => {
+    // Try to load from localStorage first
+    const savedData = localStorage.getItem('asepsData');
+    return savedData ? JSON.parse(savedData) : createDummyData();
+  });
+  
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Save data to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('asepsData', JSON.stringify(data));
+  }, [data]);
   
   // CRUD Operations for Projects
   const addProject = useCallback((project: Omit<Project, "id">) => {
@@ -421,9 +148,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(prev => ({
       ...prev,
       projects: prev.projects.filter(p => p.id !== id),
+      // Also delete related purchase orders
       purchaseOrders: prev.purchaseOrders.filter(po => po.projectId !== id),
-      externalLinks: prev.externalLinks.filter(el => el.projectId !== id),
-      shipments: prev.shipments.filter(s => s.projectId !== id)
+      // Also delete related external links
+      externalLinks: prev.externalLinks.filter(el => el.projectId !== id)
     }));
   }, []);
   
@@ -446,6 +174,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(prev => ({
       ...prev,
       clients: prev.clients.filter(c => c.id !== id),
+      // Update projects with this client to have null clientId
       projects: prev.projects.map(p => 
         p.clientId === id ? { ...p, clientId: "" } : p
       )
@@ -471,127 +200,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setData(prev => ({
       ...prev,
       suppliers: prev.suppliers.filter(s => s.id !== id),
+      // Also delete related purchase orders
       purchaseOrders: prev.purchaseOrders.filter(po => po.supplierId !== id),
+      // Remove supplier from external links
       externalLinks: prev.externalLinks.map(el => 
         el.supplierId === id ? { ...el, supplierId: undefined } : el
-      ),
-      shipments: prev.shipments.filter(s => s.supplierId !== id)
+      )
     }));
-  }, []);
-  
-  // Helper function to update project progress based on purchase orders
-  const updateProjectProgress = useCallback((projectId: string) => {
-    setData(prev => {
-      // Find all POs for this project
-      const projectPOs = prev.purchaseOrders.filter(po => po.projectId === projectId);
-      
-      // If no POs, don't update the progress
-      if (projectPOs.length === 0) {
-        return prev;
-      }
-      
-      // Calculate average progress from all POs
-      const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
-      const averageProgress = Math.round(totalProgress / projectPOs.length);
-      
-      // Update the project progress
-      return {
-        ...prev,
-        projects: prev.projects.map(project => 
-          project.id === projectId 
-            ? { ...project, progress: averageProgress }
-            : project
-        )
-      };
-    });
   }, []);
   
   // CRUD Operations for Purchase Orders
   const addPurchaseOrder = useCallback((purchaseOrder: Omit<PurchaseOrder, "id">) => {
-    const newId = uuidv4();
-    setData(prev => {
-      const newPO = { ...purchaseOrder, id: newId };
-      const newData = {
-        ...prev, 
-        purchaseOrders: [...prev.purchaseOrders, newPO]
-      };
-      
-      // Update project progress
-      const projectId = purchaseOrder.projectId;
-      const projectPOs = [...prev.purchaseOrders, newPO].filter(po => po.projectId === projectId);
-      const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
-      const averageProgress = Math.round(totalProgress / projectPOs.length);
-      
-      newData.projects = prev.projects.map(project => 
-        project.id === projectId 
-          ? { ...project, progress: averageProgress }
-          : project
-      );
-      
-      return newData;
-    });
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: [...prev.purchaseOrders, { ...purchaseOrder, id: uuidv4() }]
+    }));
   }, []);
   
   const updatePurchaseOrder = useCallback((id: string, purchaseOrder: Omit<PurchaseOrder, "id">) => {
-    setData(prev => {
-      const updatedPOs = prev.purchaseOrders.map(po => po.id === id ? { ...purchaseOrder, id } : po);
-      const newData = {
-        ...prev,
-        purchaseOrders: updatedPOs
-      };
-      
-      // Update project progress
-      const projectId = purchaseOrder.projectId;
-      const projectPOs = updatedPOs.filter(po => po.projectId === projectId);
-      
-      if (projectPOs.length > 0) {
-        const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
-        const averageProgress = Math.round(totalProgress / projectPOs.length);
-        
-        newData.projects = prev.projects.map(project => 
-          project.id === projectId 
-            ? { ...project, progress: averageProgress }
-            : project
-        );
-      }
-      
-      return newData;
-    });
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: prev.purchaseOrders.map(po => po.id === id ? { ...purchaseOrder, id } : po)
+    }));
   }, []);
   
   const deletePurchaseOrder = useCallback((id: string) => {
-    setData(prev => {
-      const poToDelete = prev.purchaseOrders.find(po => po.id === id);
-      const projectId = poToDelete?.projectId;
-      
-      const filteredPOs = prev.purchaseOrders.filter(po => po.id !== id);
-      const newData = {
-        ...prev,
-        purchaseOrders: filteredPOs,
-        externalLinks: prev.externalLinks.map(el => 
-          el.poId === id ? { ...el, poId: undefined } : el
-        ),
-        shipments: prev.shipments.filter(s => s.poId !== id)
-      };
-      
-      // Update project progress if a project ID was found
-      if (projectId) {
-        const projectPOs = filteredPOs.filter(po => po.projectId === projectId);
-        
-        if (projectPOs.length > 0) {
-          const totalProgress = projectPOs.reduce((sum, po) => sum + (po.progress || 0), 0);
-          const averageProgress = Math.round(totalProgress / projectPOs.length);
-          
-          newData.projects = prev.projects.map(project => 
-            project.id === projectId 
-              ? { ...project, progress: averageProgress }
-              : project
-          );
-        }
-      }
-      
-      return newData;
-    });
+    setData(prev => ({
+      ...prev,
+      purchaseOrders: prev.purchaseOrders.filter(po => po.id !== id),
+      // Also update external links
+      externalLinks: prev.externalLinks.map(el => 
+        el.poId === id ? { ...el, poId: undefined } : el
+      )
+    }));
   }, []);
   
   // CRUD Operations for External Links
@@ -615,45 +256,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       externalLinks: prev.externalLinks.filter(el => el.id !== id)
     }));
   }, []);
-
-  // CRUD Operations for Shipments
-  const addShipment = useCallback((shipmentData: Omit<Shipment, "id">) => {
-    const id = uuidv4();
-    const newShipment = { ...shipmentData, id };
-    
-    setData(prev => ({
-      ...prev,
-      shipments: [...prev.shipments, newShipment]
-    }));
-  }, []);
   
-  const updateShipment = useCallback((id: string, shipmentData: Partial<Omit<Shipment, "id">>) => {
-    setData(prev => ({
-      ...prev,
-      shipments: prev.shipments.map(shipment => 
-        shipment.id === id ? { ...shipment, ...shipmentData } : shipment
-      )
-    }));
-  }, []);
-  
-  const deleteShipment = useCallback((id: string) => {
-    setData(prev => ({
-      ...prev,
-      shipments: prev.shipments.filter(shipment => shipment.id !== id)
-    }));
-  }, []);
-  
-  // Generate Dummy Data (kept for backward compatibility)
+  // Generate Dummy Data
   const generateDummyData = useCallback(() => {
-    // Import dummy data dynamically to avoid load on startup
-    import('@/data/dummy-data').then(module => {
-      const dummyData = module.createDummyData();
-      setData(dummyData);
-      toast.info("Demo data generated");
-    });
+    const dummyData = createDummyData();
+    setData(dummyData);
   }, []);
   
-  // Sync with Supabase (user-triggered)
+  // Sync with Supabase
   const syncWithSupabase = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -702,9 +312,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         status: po.status,
         deadline: po.deadline,
         issued_date: po.issuedDate,
-        progress: po.progress || 0,
-        amount: po.amount || 0,
-        description: po.description || ""
+        progress: po.progress || 0
       }));
       
       const externalLinksToSync = data.externalLinks.map(el => ({
@@ -717,36 +325,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         url: el.url,
         date: el.date
       }));
-
-      const shipmentsToSync = data.shipments.map(s => ({
-        id: s.id,
-        project_id: s.projectId,
-        supplier_id: s.supplierId,
-        po_id: s.poId,
-        part_id: s.partId,
-        type: s.type,
-        shipped_date: s.shippedDate,
-        etd_date: s.etdDate,
-        eta_date: s.etaDate,
-        container_size: s.containerSize,
-        container_type: s.containerType,
-        container_number: s.containerNumber,
-        lock_number: s.lockNumber,
-        status: s.status,
-        tracking_number: s.trackingNumber,
-        notes: s.notes
-      }));
       
       await syncAllData(
         projectsToSync,
         clientsToSync,
         suppliersToSync,
         purchaseOrdersToSync,
-        externalLinksToSync,
-        shipmentsToSync
+        externalLinksToSync
       );
-      
-      setIsSupabaseConnected(true);
       
     } catch (error) {
       console.error("Error syncing with Supabase:", error);
@@ -756,16 +342,87 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [data]);
   
-  // Load data from Supabase (user-triggered)
+  // Load data from Supabase
   const loadFromSupabase = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await loadAllData();
       
       if (result.success) {
-        const transformedData = transformSupabaseData(result);
-        setData(transformedData);
-        setIsSupabaseConnected(true);
+        // Transform data to match our app's schema
+        const transformedProjects = result.projects.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          clientId: p.client_id || "",
+          location: p.location || "",
+          status: p.status || "Pending",
+          progress: p.progress || 0,
+          startDate: p.start_date,
+          endDate: p.end_date,
+          projectManager: p.project_manager,
+          description: p.description
+        }));
+        
+        const transformedClients = result.clients.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          contactPerson: c.contact_person,
+          email: c.email,
+          phone: c.phone,
+          location: c.location
+        }));
+        
+        const transformedSuppliers = result.suppliers.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          country: s.country,
+          contactPerson: s.contact_person,
+          email: s.email,
+          phone: s.phone,
+          rating: s.rating,
+          onTimeDelivery: s.on_time_delivery,
+          location: s.location,
+          positiveComments: s.positive_comments || [],
+          negativeComments: s.negative_comments || []
+        }));
+        
+        const transformedPurchaseOrders = result.purchaseOrders.map((po: any) => ({
+          id: po.id,
+          poNumber: po.po_number,
+          projectId: po.project_id,
+          supplierId: po.supplier_id,
+          status: po.status,
+          deadline: po.deadline,
+          issuedDate: po.issued_date,
+          progress: po.progress || 0,
+          parts: po.parts ? po.parts.map((part: any) => ({
+            id: part.id,
+            name: part.name,
+            quantity: part.quantity,
+            status: part.status || "Pending"
+          })) : []
+        }));
+        
+        const transformedExternalLinks = result.externalLinks.map((el: any) => ({
+          id: el.id,
+          type: el.type,
+          projectId: el.project_id,
+          supplierId: el.supplier_id,
+          poId: el.po_id,
+          title: el.title,
+          url: el.url,
+          date: el.date
+        }));
+        
+        // Update local state with data from Supabase
+        setData({
+          projects: transformedProjects,
+          clients: transformedClients,
+          suppliers: transformedSuppliers,
+          purchaseOrders: transformedPurchaseOrders,
+          externalLinks: transformedExternalLinks
+        });
+        
         return { success: true };
       }
       
@@ -782,7 +439,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const clearAllData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const emptyData = {
+        projects: [],
+        clients: [],
+        suppliers: [],
+        purchaseOrders: [],
+        externalLinks: []
+      };
       setData(emptyData);
+      localStorage.removeItem('asepsData');
       return Promise.resolve();
     } catch (error) {
       console.error("Error clearing data:", error);
@@ -799,7 +464,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     suppliers: data.suppliers,
     purchaseOrders: data.purchaseOrders,
     externalLinks: data.externalLinks,
-    shipments: data.shipments,
     isLoading,
     
     // CRUD Operations
@@ -823,10 +487,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateExternalLink,
     deleteExternalLink,
     
-    addShipment,
-    updateShipment,
-    deleteShipment,
-    
     // Utility Functions
     generateDummyData,
     syncWithSupabase,
@@ -844,7 +504,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 // Custom Hook to use the context
 export const useData = (): DataContextType => {
   const context = useContext(DataContext);
-  if (context === null) {
+  if (context === undefined) {
     throw new Error("useData must be used within a DataProvider");
   }
   return context;

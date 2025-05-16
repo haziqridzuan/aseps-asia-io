@@ -21,9 +21,6 @@ export default function AdminSettings() {
   const [apiEndpoint, setApiEndpoint] = useState("https://api.asepsasia.com");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const [autoSync, setAutoSync] = useState(() => {
-    return localStorage.getItem('autoSync') === 'true';
-  });
   
   const handleSyncWithSupabase = async () => {
     setIsSyncing(true);
@@ -52,13 +49,7 @@ export default function AdminSettings() {
   };
   
   const handleSaveSettings = () => {
-    localStorage.setItem('autoSync', autoSync.toString());
     toast.success("Settings saved successfully");
-  };
-  
-  const toggleAutoSync = (checked: boolean) => {
-    setAutoSync(checked);
-    localStorage.setItem('autoSync', checked.toString());
   };
   
   return (
@@ -140,20 +131,6 @@ export default function AdminSettings() {
                 id="api-endpoint" 
                 value={apiEndpoint} 
                 onChange={(e) => setApiEndpoint(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="auto-sync">Auto Sync with Supabase</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically sync data changes with Supabase
-                </p>
-              </div>
-              <Switch
-                id="auto-sync"
-                checked={autoSync}
-                onCheckedChange={toggleAutoSync}
               />
             </div>
           </CardContent>

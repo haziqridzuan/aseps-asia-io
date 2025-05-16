@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData, PurchaseOrder, Part } from "@/contexts/DataContext";
 import {
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Trash, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
@@ -43,14 +44,7 @@ export default function PurchaseOrderForm({
     deadline: "",
     issuedDate: new Date().toISOString().substring(0, 10),
     progress: 0,
-    amount: 0,
-    parts: [{ 
-      id: `part-${Date.now()}`, 
-      name: "", 
-      quantity: 1, 
-      status: "Pending",
-      progress: 0 
-    }],
+    parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
   });
   
   useEffect(() => {
@@ -63,11 +57,7 @@ export default function PurchaseOrderForm({
         deadline: purchaseOrder.deadline.substring(0, 10),
         issuedDate: purchaseOrder.issuedDate.substring(0, 10),
         progress: purchaseOrder.progress || 0, 
-        amount: purchaseOrder.amount || 0,
-        parts: purchaseOrder.parts.map(part => ({
-          ...part,
-          progress: part.progress || 0
-        })),
+        parts: purchaseOrder.parts,
       });
     } else {
       // Reset form for new PO
@@ -79,14 +69,7 @@ export default function PurchaseOrderForm({
         deadline: "",
         issuedDate: new Date().toISOString().substring(0, 10),
         progress: 0,
-        amount: 0,
-        parts: [{ 
-          id: `part-${Date.now()}`, 
-          name: "", 
-          quantity: 1, 
-          status: "Pending",
-          progress: 0 
-        }],
+        parts: [{ id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" }],
       });
     }
   }, [purchaseOrder, open]);
@@ -98,10 +81,7 @@ export default function PurchaseOrderForm({
   const handlePartChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const newParts = [...prev.parts];
-      newParts[index] = { 
-        ...newParts[index], 
-        [field]: field === 'quantity' || field === 'progress' ? Number(value) : value 
-      };
+      newParts[index] = { ...newParts[index], [field]: field === 'quantity' ? Number(value) : value };
       return { ...prev, parts: newParts };
     });
   };
@@ -111,13 +91,7 @@ export default function PurchaseOrderForm({
       ...prev,
       parts: [
         ...prev.parts,
-        { 
-          id: `part-${Date.now()}`, 
-          name: "", 
-          quantity: 1, 
-          status: "Pending",
-          progress: 0 
-        },
+        { id: `part-${Date.now()}`, name: "", quantity: 1, status: "Pending" },
       ],
     }));
   };
@@ -135,18 +109,18 @@ export default function PurchaseOrderForm({
     });
   };
 
-  // Calculate progress based on parts progress
+  // Calculate progress based on parts status
   const calculateProgressFromParts = () => {
     if (!formData.parts.length) return 0;
     
-    const totalProgress = formData.parts.reduce((sum, part) => sum + (part.progress || 0), 0);
-    return Math.round(totalProgress / formData.parts.length);
+    const completedParts = formData.parts.filter(part => part.status === "Completed").length;
+    return Math.round((completedParts / formData.parts.length) * 100);
   };
   
   // Update progress when parts status changes
   useEffect(() => {
+    const calculatedProgress = calculateProgressFromParts();
     if (formData.progress === 0 || formData.progress === undefined) {
-      const calculatedProgress = calculateProgressFromParts();
       setFormData(prev => ({ ...prev, progress: calculatedProgress }));
     }
   }, [formData.parts]);
@@ -288,20 +262,6 @@ export default function PurchaseOrderForm({
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount ($)*</Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => handleChange("amount", parseFloat(e.target.value) || 0)}
-                required
-                placeholder="0.00"
-              />
-            </div>
           </div>
           
           {/* Progress Section */}
@@ -337,8 +297,8 @@ export default function PurchaseOrderForm({
             </div>
             
             {formData.parts.map((part, index) => (
-              <div key={part.id} className="grid grid-cols-12 gap-4 mb-4 p-3 border rounded">
-                <div className="space-y-2 col-span-6">
+              <div key={part.id} className="grid grid-cols-4 gap-4 mb-4 p-3 border rounded">
+                <div className="space-y-2">
                   <Label htmlFor={`part-name-${index}`}>Part Name</Label>
                   <Input
                     id={`part-name-${index}`}
@@ -349,7 +309,7 @@ export default function PurchaseOrderForm({
                   />
                 </div>
                 
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2">
                   <Label htmlFor={`part-quantity-${index}`}>Quantity</Label>
                   <Input
                     id={`part-quantity-${index}`}
@@ -361,7 +321,7 @@ export default function PurchaseOrderForm({
                   />
                 </div>
                 
-                <div className="space-y-2 col-span-3">
+                <div className="space-y-2">
                   <Label htmlFor={`part-status-${index}`}>Status</Label>
                   <Select
                     value={part.status}
@@ -381,21 +341,7 @@ export default function PurchaseOrderForm({
                   </Select>
                 </div>
                 
-                <div className="space-y-2 col-span-9">
-                  <div className="flex justify-between">
-                    <Label htmlFor={`part-progress-${index}`}>Progress: {part.progress || 0}%</Label>
-                  </div>
-                  <Slider
-                    id={`part-progress-${index}`}
-                    value={[part.progress || 0]}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onValueChange={(values) => handlePartChange(index, "progress", values[0])}
-                  />
-                </div>
-                
-                <div className="flex items-end justify-end col-span-3">
+                <div className="flex items-end justify-end">
                   <Button 
                     type="button" 
                     variant="destructive" 
