@@ -1,5 +1,6 @@
 
 import * as React from "react";
+import { toast as sonnerToast } from "sonner";
 import { type ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 export type ToasterToast = {
@@ -121,6 +122,44 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
+function toast(props: Toast) {
+  const id = genId();
+
+  dispatch({
+    type: actionTypes.ADD_TOAST,
+    toast: {
+      ...props,
+      id,
+    },
+  });
+
+  return {
+    id,
+    dismiss: () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id }),
+    update: (props: Toast) =>
+      dispatch({
+        type: actionTypes.UPDATE_TOAST,
+        toast: { ...props, id },
+      }),
+  };
+}
+
+toast.success = (content: string) => {
+  return toast({ title: "Success", description: content });
+};
+
+toast.error = (content: string) => {
+  return toast({ title: "Error", description: content });
+};
+
+toast.info = (content: string) => {
+  return toast({ title: "Info", description: content });
+};
+
+toast.warning = (content: string) => {
+  return toast({ title: "Warning", description: content });
+};
+
 export function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
@@ -135,38 +174,12 @@ export function useToast() {
   }, [state]);
 
   return {
-    toast: (props: Toast) => {
-      const id = genId();
-
-      const update = (props: Toast) => {
-        dispatch({
-          type: actionTypes.UPDATE_TOAST,
-          toast: { ...props, id },
-        });
-      };
-
-      const dismiss = () => {
-        dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
-      };
-
-      dispatch({
-        type: actionTypes.ADD_TOAST,
-        toast: {
-          ...props,
-          id,
-        },
-      });
-
-      return {
-        id,
-        dismiss,
-        update,
-      };
-    },
+    toast,
     dismiss: (toastId?: string) => {
       dispatch({ type: actionTypes.DISMISS_TOAST, toastId });
     },
+    toasts: state.toasts,
   };
 }
 
-// We don't need to export toast here, as we're importing from sonner
+export { toast };

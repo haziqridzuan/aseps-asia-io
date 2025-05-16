@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Trash, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 
@@ -124,7 +124,10 @@ export default function PurchaseOrderForm({
   
   const removePart = (index: number) => {
     if (formData.parts.length <= 1) {
-      toast.error("Purchase order must have at least one part");
+      toast({
+        title: "Error",
+        description: "Purchase order must have at least one part"
+      });
       return;
     }
     
@@ -156,12 +159,18 @@ export default function PurchaseOrderForm({
     
     // Validation
     if (!formData.poNumber || !formData.projectId || !formData.supplierId || !formData.deadline) {
-      toast.error("Please fill in all required fields");
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields"
+      });
       return;
     }
     
     if (formData.parts.some(part => !part.name)) {
-      toast.error("All parts must have a name");
+      toast({
+        title: "Error",
+        description: "All parts must have a name"
+      });
       return;
     }
     
@@ -171,15 +180,24 @@ export default function PurchaseOrderForm({
       if (purchaseOrder) {
         // Update existing PO
         updatePurchaseOrder(purchaseOrder.id, formData);
-        toast.success("Purchase order updated successfully");
+        toast({
+          title: "Success",
+          description: "Purchase order updated successfully"
+        });
       } else {
         // Add new PO
         addPurchaseOrder(formData);
-        toast.success("Purchase order added successfully");
+        toast({
+          title: "Success",
+          description: "Purchase order added successfully"
+        });
       }
       onClose();
     } catch (error) {
-      toast.error("An error occurred. Please try again.");
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again."
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,8 +1,5 @@
 
 import { toast as sonnerToast } from "sonner";
+import { useToast, toast } from "@/hooks/use-toast";
 
-// Re-export sonner toast directly
-export const toast = sonnerToast;
-
-// Export useToast from the actual hook file
-export { useToast } from "@/hooks/use-toast";
+export { useToast, toast };

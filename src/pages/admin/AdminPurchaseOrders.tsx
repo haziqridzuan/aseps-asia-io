@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Plus, Search, Pencil, Trash } from "lucide-react";
 import { format } from "date-fns";
 import PurchaseOrderForm from "@/components/admin/PurchaseOrderForm";
@@ -48,7 +47,10 @@ export default function AdminPurchaseOrders() {
   const handleDeletePO = (poId: string) => {
     if (confirm("Are you sure you want to delete this purchase order?")) {
       deletePurchaseOrder(poId);
-      toast.success("Purchase order deleted successfully");
+      toast({
+        title: "Success", 
+        description: "Purchase order deleted successfully"
+      });
     }
   };
   
